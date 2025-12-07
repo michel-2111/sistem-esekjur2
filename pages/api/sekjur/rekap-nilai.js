@@ -8,7 +8,8 @@ export default async function handler(req, res) {
 
     try {
         const decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
-        if (decoded.selectedRole !== 'sekjur' || !decoded.jurusanId) {
+        
+        if (decoded.selectedRole !== 'sekjur' || !decoded.jurusan_id) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
@@ -17,13 +18,15 @@ export default async function handler(req, res) {
                 where: {
                     status: 'telah_dinilai',
                     mahasiswa: {
-                        prodi: { jurusan_id: decoded.jurusanId }
+                        prodi: { 
+                            jurusan_id: decoded.jurusan_id 
+                        }
                     }
                 },
                 include: {
                     mahasiswa: { select: { nama: true, identifier: true } },
                     application_courses: {
-                        include: { course: { select: { nama: true } } }
+                        include: { course: { select: { nama: true, id: true } } }
                     }
                 },
                 orderBy: { mahasiswa: { nama: 'asc' } }
@@ -41,7 +44,9 @@ export default async function handler(req, res) {
                 where: {
                     id: { in: applicationIds },
                     mahasiswa: {
-                        prodi: { jurusan_id: decoded.jurusanId }
+                        prodi: { 
+                            jurusan_id: decoded.jurusan_id 
+                        }
                     }
                 },
                 data: { status: 'selesai' }

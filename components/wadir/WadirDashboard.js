@@ -30,7 +30,7 @@ export default function WadirDashboard() {
         <div>
             <h1 className="text-3xl font-bold mb-6 text-gray-900">Dashboard Wakil Direktur</h1>
             {loading ? <p>Memuat statistik...</p> : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
                     <StatCard 
                         icon={FileCheck} 
                         label="Pengajuan Cuti Perlu Persetujuan" 

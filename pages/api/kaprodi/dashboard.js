@@ -10,31 +10,29 @@ export default async function handler(req, res) {
 
     try {
         const decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
-        if (decoded.selectedRole !== 'kaprodi' || !decoded.prodiId) {
+        
+        if (decoded.selectedRole !== 'kaprodi' || !decoded.prodi_id) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
         const activePeriod = await prisma.academic_Period.findFirst({ orderBy: { start_date: 'desc' }});
         if (!activePeriod) {
-            return res.status(200).json({ waitingAssignment: 0, documentCount: 0 });
+            return res.status(200).json({ waitingAssignment: 0, documentCount: 0, prodi: null });
         }
 
         const [waitingAssignment, documentCount, prodi] = await Promise.all([
-            // Hitung pengajuan yang menunggu penugasan di prodi kaprodi
             prisma.sA_Application.count({
                 where: {
                     status: 'menunggu_penugasan_dosen',
                     period_id: activePeriod.id,
-                    mahasiswa: { prodi_id: decoded.prodiId }
+                    mahasiswa: { prodi_id: decoded.prodi_id }
                 }
             }),
-            // Hitung total dokumen yang diterima
             prisma.document_Recipient.count({
                 where: { user_id: decoded.id }
             }),
-            // Ambil nama prodi
             prisma.prodi.findUnique({
-                where: { id: decoded.prodiId },
+                where: { id: decoded.prodi_id },
                 select: { nama: true }
             })
         ]);

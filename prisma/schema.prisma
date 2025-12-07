@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,42 +8,45 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// --- Tabel Inti & Pengguna ---
 model Jurusan {
   id    String  @id @db.VarChar(10)
   nama  String  @db.VarChar(255)
   prodi Prodi[]
   users User[]
+  ta_committees TA_Committee[]
+  ta_settings   TA_Settings?
 }
 
 model Prodi {
   id         String   @id @db.VarChar(20)
   nama       String   @db.VarChar(255)
   jurusan_id String   @db.VarChar(10)
+  courses    Course[]
   jurusan    Jurusan  @relation(fields: [jurusan_id], references: [id])
   users      User[]
-  courses    Course[]
 }
 
 model User {
-  id                  Int                   @id @default(autoincrement())
-  nama                String                @db.VarChar(255)
-  identifier          String                @unique @db.VarChar(50)
-  password            String                @db.VarChar(255)
-  telepon             String?               @db.VarChar(20)
-  nomor_rekening      String?               @db.VarChar(50)
-  prodi_id            String?               @db.VarChar(20)
-  jurusan_id          String?               @db.VarChar(10)
-  prodi               Prodi?                @relation(fields: [prodi_id], references: [id])
-  jurusan             Jurusan?              @relation(fields: [jurusan_id], references: [id])
-  roles               User_Roles[]
-  course_pengampu     Course_Pengampu[]
-  sa_applications     SA_Application[]
+  id                  Int                  @id @default(autoincrement())
+  nama                String               @db.VarChar(255)
+  identifier          String               @unique @db.VarChar(50)
+  password            String               @db.VarChar(255)
+  telepon             String?              @db.VarChar(20)
+  nomor_rekening      String?              @db.VarChar(50)
+  prodi_id            String?              @db.VarChar(20)
+  jurusan_id          String?              @db.VarChar(10)
   application_courses Application_Course[]
+  course_pengampu     Course_Pengampu[]
   sent_documents      Document[]
   received_documents  Document_Recipient[]
   uploaded_templates  Document_Template[]
   leave_applications  Leave_Application[]
+  sa_applications     SA_Application[]
+  jurusan             Jurusan?             @relation(fields: [jurusan_id], references: [id])
+  prodi               Prodi?               @relation(fields: [prodi_id], references: [id])
+  roles               User_Roles[]
+  ta_applications     TA_Application[]
+  ta_committees       TA_Committee[]
 }
 
 model Role {
@@ -56,23 +56,21 @@ model Role {
 }
 
 model User_Roles {
-  user    User @relation(fields: [user_id], references: [id])
   user_id Int
-  role    Role @relation(fields: [role_id], references: [id])
   role_id Int
+  role    Role @relation(fields: [role_id], references: [id])
+  user    User @relation(fields: [user_id], references: [id])
 
   @@id([user_id, role_id])
 }
 
-
-// --- Tabel Akademik & Semester Antara ---
 model Academic_Period {
   id                 String              @id @db.VarChar(20)
   nama               String              @db.VarChar(255)
   start_date         DateTime            @db.Date
   end_date           DateTime            @db.Date
-  sa_applications    SA_Application[]
   leave_applications Leave_Application[]
+  sa_applications    SA_Application[]
 }
 
 model Course {
@@ -82,44 +80,44 @@ model Course {
   sks                 Int
   semester            Int
   prodi_id            String               @db.VarChar(20)
+  application_courses Application_Course[]
   prodi               Prodi                @relation(fields: [prodi_id], references: [id])
   pengampu            Course_Pengampu[]
-  application_courses Application_Course[]
 }
 
 model Course_Pengampu {
-  course     Course @relation(fields: [course_id], references: [id])
-  course_id  Int
-  dosen      User   @relation(fields: [dosen_id], references: [id])
-  dosen_id   Int
+  course_id Int
+  dosen_id  Int
+  course    Course @relation(fields: [course_id], references: [id])
+  dosen     User   @relation(fields: [dosen_id], references: [id])
 
   @@id([course_id, dosen_id])
 }
 
 model SA_Application {
-  id                    Int                  @id @default(autoincrement())
-  mahasiswa_id          Int
-  period_id             String               @db.VarChar(20)
-  status                String               @db.VarChar(50)
-  tanggal_pengajuan     DateTime?            @db.Timestamp()
-  tanggal_pembayaran    DateTime?            @db.Timestamp()
-  bukti_pembayaran_url  String?              @db.VarChar(255)
-  alasan_ditolak        String?              @db.Text
-  max_sks               Int?
-  mahasiswa             User                 @relation(fields: [mahasiswa_id], references: [id])
-  period                Academic_Period      @relation(fields: [period_id], references: [id])
-  application_courses   Application_Course[]
+  id                   Int                  @id @default(autoincrement())
+  mahasiswa_id         Int
+  period_id            String               @db.VarChar(20)
+  status               String               @db.VarChar(50)
+  tanggal_pengajuan    DateTime?            @db.Timestamp(6)
+  tanggal_pembayaran   DateTime?            @db.Timestamp(6)
+  bukti_pembayaran_url String?              @db.VarChar(255)
+  alasan_ditolak       String?
+  max_sks              Int?
+  application_courses  Application_Course[]
+  mahasiswa            User                 @relation(fields: [mahasiswa_id], references: [id])
+  period               Academic_Period      @relation(fields: [period_id], references: [id])
 }
 
 model Application_Course {
   application_id Int
   course_id      Int
   dosen_id       Int?
-  nilai          String? @db.Char(2)
-  jadwal         String? @db.VarChar(255)
-  ruang          String? @db.VarChar(50)
-  materi_url     String? @db.VarChar(255)
-  kelas_selesai  Boolean? @default(false)
+  nilai          String?        @db.Char(2)
+  jadwal         String?        @db.VarChar(255)
+  ruang          String?        @db.VarChar(50)
+  materi_url     String?        @db.VarChar(255)
+  kelas_selesai  Boolean?       @default(false)
   application    SA_Application @relation(fields: [application_id], references: [id])
   course         Course         @relation(fields: [course_id], references: [id])
   dosen          User?          @relation(fields: [dosen_id], references: [id])
@@ -127,15 +125,14 @@ model Application_Course {
   @@id([application_id, course_id])
 }
 
-// --- Tabel Dokumen & Cuti ---
 model Document {
-  id          Int                  @id @default(autoincrement())
-  title       String               @db.VarChar(255)
-  file_url    String               @db.VarChar(255)
-  sender_id   Int
-  timestamp   DateTime             @default(now()) @db.Timestamp()
-  sender      User                 @relation(fields: [sender_id], references: [id])
-  recipients  Document_Recipient[]
+  id         Int                  @id @default(autoincrement())
+  title      String               @db.VarChar(255)
+  file_url   String               @db.VarChar(255)
+  sender_id  Int
+  timestamp  DateTime             @default(now()) @db.Timestamp(6)
+  sender     User                 @relation(fields: [sender_id], references: [id])
+  recipients Document_Recipient[]
 }
 
 model Document_Recipient {
@@ -148,23 +145,66 @@ model Document_Recipient {
 }
 
 model Document_Template {
-  id          String  @id @db.VarChar(20)
-  title       String  @db.VarChar(255)
-  file_url    String  @db.VarChar(255)
-  type        String  @db.VarChar(50)
+  id          String @id @db.VarChar(20)
+  title       String @db.VarChar(255)
+  file_url    String @db.VarChar(255)
+  type        String @db.VarChar(50)
   uploader_id Int?
-  uploader    User?   @relation(fields: [uploader_id], references: [id])
+  uploader    User?  @relation(fields: [uploader_id], references: [id])
 }
 
 model Leave_Application {
-  id                 Int             @id @default(autoincrement())
-  mahasiswa_id       Int
-  period_id          String          @db.VarChar(20)
-  form_url           String          @db.VarChar(255)
-  durasi             String          @db.VarChar(50)
-  status             String          @db.VarChar(50)
-  tanggal_pengajuan  DateTime        @default(now()) @db.Timestamp()
-  alasan_ditolak     String?         @db.Text
-  mahasiswa          User            @relation(fields: [mahasiswa_id], references: [id])
-  period             Academic_Period @relation(fields: [period_id], references: [id])
+  id                Int             @id @default(autoincrement())
+  mahasiswa_id      Int
+  period_id         String          @db.VarChar(20)
+  form_url          String          @db.VarChar(255)
+  durasi            String          @db.VarChar(50)
+  status            String          @db.VarChar(50)
+  tanggal_pengajuan DateTime        @default(now()) @db.Timestamp(6)
+  alasan_ditolak    String?
+  mahasiswa         User            @relation(fields: [mahasiswa_id], references: [id])
+  period            Academic_Period @relation(fields: [period_id], references: [id])
+}
+
+model TA_Application {
+  id                       Int       @id @default(autoincrement())
+  mahasiswa_id             Int
+  mahasiswa                User      @relation(fields: [mahasiswa_id], references: [id])
+  
+  // Tahap 1: Persyaratan
+  transcript_url           String?   @db.VarChar(255)
+  payment_proof_url        String?   @db.VarChar(255)
+  requirements_status      String    @default("belum_upload")
+  requirements_feedback    String?   @db.Text 
+
+  // Tahap 2: Proposal
+  proposal_title           String?   @db.VarChar(255)
+  proposal_file_url        String?   @db.VarChar(255)
+  proposal_status          String    @default("belum_diajukan")
+  
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+}
+
+model TA_Committee {
+  id          Int      @id @default(autoincrement())
+  jurusan_id  String   @db.VarChar(10)
+  jurusan     Jurusan  @relation(fields: [jurusan_id], references: [id])
+  dosen_id    Int
+  dosen       User     @relation(fields: [dosen_id], references: [id])
+  
+  // Posisi: 'ketua', 'sekretaris', atau 'anggota'
+  position    String   @db.VarChar(20) 
+  
+  // Apakah aktif periode ini?
+  is_active   Boolean  @default(true)
+
+  @@unique([jurusan_id, position])
+}
+
+model TA_Settings {
+  id              Int      @id @default(autoincrement())
+  jurusan_id      String   @unique @db.VarChar(10)
+  jurusan         Jurusan  @relation(fields: [jurusan_id], references: [id])
+  approval_mode   String   @default("kaprodi") // 'kaprodi', 'panitia', 'both'
 }

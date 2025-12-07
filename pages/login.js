@@ -37,7 +37,7 @@ export default function LoginPage() {
         }
     };
     
-    const identifierLabel = role === 'Mahasiswa' ? 'NIM' : 'NIP';
+    const identifierLabel = role === 'mahasiswa' ? 'NIM' : 'NIP';
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-900">

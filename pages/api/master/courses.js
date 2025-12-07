@@ -10,21 +10,22 @@ export default async function handler(req, res) {
     try {
         const { auth_token } = req.cookies;
         const decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
+
+        const prodiId = decoded.prodi_id;
         
-        if (!decoded.prodiId) {
+        if (!prodiId) {
             return res.status(400).json({ message: 'User does not have a Prodi ID.' });
         }
 
         const courses = await prisma.course.findMany({
             where: {
-                prodi_id: decoded.prodiId,
+                prodi_id: prodiId,
             },
             orderBy: {
                 semester: 'asc',
             },
         });
 
-        // Mengelompokkan mata kuliah berdasarkan semester
         const groupedCourses = courses.reduce((acc, course) => {
             const semester = course.semester;
             if (!acc[semester]) {

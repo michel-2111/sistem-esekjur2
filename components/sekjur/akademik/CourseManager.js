@@ -118,7 +118,7 @@ export default function CourseManager({ prodiList, courseList, dosenList, onData
                 onConfirm={handleDeleteCourse}
                 title="Konfirmasi Hapus Mata Kuliah"
             >
-                Anda yakin ingin menghapus mata kuliah '<strong>{courseToDelete?.nama}</strong>'?
+                Anda yakin ingin menghapus mata kuliah <strong>{courseToDelete?.nama}</strong>?
             </ConfirmationModal>
         </>
     );

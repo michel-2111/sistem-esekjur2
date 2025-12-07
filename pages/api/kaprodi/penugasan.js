@@ -8,13 +8,14 @@ export default async function handler(req, res) {
 
     try {
         const decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
-        if (decoded.selectedRole !== 'kaprodi' || !decoded.prodiId) {
+        
+        if (decoded.selectedRole !== 'kaprodi' || !decoded.prodi_id) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
         if (req.method === 'GET') {
-            // ... (Logika GET tetap sama, tidak perlu diubah)
-            const kaprodiProdiId = decoded.prodiId;
+            const kaprodiProdiId = decoded.prodi_id;
+            
             const studentsInProdi = await prisma.user.findMany({ where: { prodi_id: kaprodiProdiId }, select: { id: true } });
             const studentIds = studentsInProdi.map(student => student.id);
             const applications = await prisma.sA_Application.findMany({
@@ -27,17 +28,14 @@ export default async function handler(req, res) {
             return res.status(200).json(applications);
         }
 
-        // --- POST: Menyimpan hasil penugasan (LOGIKA VALIDASI DIPERBAIKI) ---
         if (req.method === 'POST') {
             const { applicationId, assignments } = req.body;
 
-            // 1. Ambil semua mata kuliah yang seharusnya ada dalam pengajuan
             const requiredCourses = await prisma.application_Course.findMany({
                 where: { application_id: Number(applicationId) },
                 select: { course_id: true }
             });
 
-            // 2. Validasi baru yang lebih andal
             const allCoursesAssigned = requiredCourses.every(
                 (rc) => assignments[rc.course_id] && assignments[rc.course_id] !== ''
             );
@@ -46,7 +44,6 @@ export default async function handler(req, res) {
                 return res.status(400).json({ message: 'Harap tugaskan dosen untuk semua mata kuliah.' });
             }
 
-            // 3. Lanjutkan proses update jika validasi berhasil
             const updatePromises = Object.entries(assignments).map(([courseId, dosenId]) => 
                 prisma.application_Course.update({
                     where: {

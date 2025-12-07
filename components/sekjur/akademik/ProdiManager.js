@@ -43,7 +43,7 @@ export default function ProdiManager({ prodiList, onDataChange }) {
 
     return (
         <>
-            <div className="bg-white p-6 rounded-lg shadow-md h-full text-gray-900"> {/* Removed text-gray-900 as it's default */}
+            <div className="bg-white p-6 rounded-lg shadow-md h-full text-gray-900">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Program Studi</h2>
                     <button
@@ -94,7 +94,7 @@ export default function ProdiManager({ prodiList, onDataChange }) {
                 onConfirm={handleDeleteProdi}
                 title="Konfirmasi Hapus Prodi"
             >
-                Anda yakin ingin menghapus prodi '<strong>{prodiToDelete?.nama}</strong>'? Ini akan menghapus semua mata kuliah yang terkait.
+                Anda yakin ingin menghapus prodi <strong>{prodiToDelete?.nama}</strong>? Ini akan menghapus semua mata kuliah yang terkait.
             </ConfirmationModal>
         </>
     );

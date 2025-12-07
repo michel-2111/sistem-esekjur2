@@ -7,7 +7,6 @@ export default function LeaveVerificationModal({ application, userRole, onClose,
 
     if (!application) return null;
 
-    // Tentukan API endpoint dan teks tombol berdasarkan peran
     const apiEndpoint = userRole === 'kajur' ? '/api/kajur/verifikasi-cuti' : '/api/wadir/verifikasi-cuti';
     const approveButtonText = userRole === 'kajur' ? 'Setujui & Teruskan ke Wadir' : 'Setujui Pengajuan Cuti';
 
@@ -36,7 +35,7 @@ export default function LeaveVerificationModal({ application, userRole, onClose,
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] z-50 flex justify-center items-center p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b flex justify-between items-center">
-                    <h2 className="text-xl font-bold">Verifikasi Cuti - {application.mahasiswa.nama}</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Verifikasi Cuti - {application.mahasiswa.nama}</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
                 </div>
                 <div className="p-4 flex-grow overflow-y-auto">
@@ -53,7 +52,7 @@ export default function LeaveVerificationModal({ application, userRole, onClose,
                         <div className="relative flex justify-center text-xs uppercase"><span className="bg-gray-50 px-2 text-gray-500">Atau</span></div>
                     </div>
                     <div>
-                        <textarea value={alasanDitolak} onChange={(e) => setAlasanDitolak(e.target.value)} placeholder="Tulis alasan penolakan di sini..." rows="2" className="block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
+                        <textarea value={alasanDitolak} onChange={(e) => setAlasanDitolak(e.target.value)} placeholder="Tulis alasan penolakan di sini..." rows="2" className="block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-500"></textarea>
                         <button onClick={() => handleSubmit('reject')} disabled={isSubmitting} className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-gray-400">
                             Tolak Pengajuan
                         </button>

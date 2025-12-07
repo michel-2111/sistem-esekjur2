@@ -4,7 +4,7 @@ import { Send } from 'lucide-react';
 
 export default function PengajuanMK({ application, onSuccess }) {
     const [coursesBySemester, setCoursesBySemester] = useState({});
-    const [selectedSemester, setSelectedSemester] = useState('1'); // Default ke semester 1
+    const [selectedSemester, setSelectedSemester] = useState('1');
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [currentSks, setCurrentSks] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -15,14 +15,23 @@ export default function PengajuanMK({ application, onSuccess }) {
 
     useEffect(() => {
         fetch('/api/master/courses')
-            .then(res => res.json())
-            .then(data => {
-                setCoursesBySemester(data);
-                // Set default semester ke semester pertama yang ada data
-                const firstSemesterWithCourses = Object.keys(data)[0];
-                if(firstSemesterWithCourses) setSelectedSemester(firstSemesterWithCourses);
+            .then(async res => {
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.message || 'Gagal memuat daftar mata kuliah.');
+                }
+                return res.json();
             })
-            .catch(() => setError('Gagal memuat daftar mata kuliah.'))
+            .then(data => {
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    setCoursesBySemester(data);
+                    const firstSemesterWithCourses = Object.keys(data)[0];
+                    if(firstSemesterWithCourses) setSelectedSemester(firstSemesterWithCourses);
+                } else {
+                    setCoursesBySemester({});
+                }
+            })
+            .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
 
@@ -95,12 +104,16 @@ export default function PengajuanMK({ application, onSuccess }) {
             </div>
 
             <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                {(coursesBySemester[selectedSemester] || []).map(course => (
-                    <label key={course.id} className="flex items-center p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                        <input type="checkbox" onChange={(e) => handleCourseToggle(course, e.target.checked)} className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                        <span className="ml-4 text-gray-800">{course.nama} ({course.sks} SKS)</span>
-                    </label>
-                ))}
+                {Object.entries(coursesBySemester).length > 0 ? (
+                    (coursesBySemester[selectedSemester] || []).map(course => (
+                        <label key={course.id} className="flex items-center p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="checkbox" onChange={(e) => handleCourseToggle(course, e.target.checked)} className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className="ml-4 text-gray-800">{course.nama} ({course.sks} SKS)</span>
+                        </label>
+                    ))
+                ) : (
+                    <p className="text-gray-500 text-center">Tidak ada mata kuliah yang tersedia.</p>
+                )}
             </div>
 
             {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}

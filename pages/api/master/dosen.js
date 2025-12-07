@@ -7,13 +7,20 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
+    const { auth_token } = req.cookies;
+    if (!auth_token) return res.status(401).json({ message: 'Not authenticated' });
+
     try {
-        const { auth_token } = req.cookies;
         const decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
 
-        // Kaprodi hanya bisa menugaskan dosen dari jurusannya
+        const prodiId = decoded.prodi_id;
+
+        if (!prodiId) {
+            return res.status(400).json({ message: 'User does not have a Prodi ID.' });
+        }
+
         const kaprodiProdi = await prisma.prodi.findUnique({
-            where: { id: decoded.prodiId },
+            where: { id: prodiId },
             select: { jurusan_id: true }
         });
 

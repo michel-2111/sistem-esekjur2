@@ -5,7 +5,34 @@ import SendDocumentModal from '../components/sekjur/SendDocumentModal';
 import EditTemplateModal from '../components/sekjur/EditTemplateModal';
 import { useAppContext } from '../context/AppContext';
 import { useRouter } from 'next/router';
-import { FileUp, Edit3, Download} from 'lucide-react';
+import { FileUp, Edit3, Download } from 'lucide-react';
+
+// --- Komponen Tambahan untuk Read More / Show Less ---
+const ExpandableText = ({ text, maxLength = 100 }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    if (!text) return <span>-</span>;
+
+    // Jika teks lebih pendek dari batas, tampilkan biasa
+    if (text.length <= maxLength) {
+        return <span>{text}</span>;
+    }
+
+    return (
+        <div>
+            <span>
+                {isExpanded ? text : `${text.substring(0, maxLength)}...`}
+            </span>
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="ml-1 text-blue-600 hover:text-blue-800 font-semibold hover:underline focus:outline-none"
+            >
+                {isExpanded ? '(Sembunyikan)' : '(Selengkapnya)'}
+            </button>
+        </div>
+    );
+};
+// ---------------------------------------------------
 
 export default function ManajemenDokumenPage() {
     const { user, isAuthenticated } = useAppContext();
@@ -21,7 +48,15 @@ export default function ManajemenDokumenPage() {
         try {
             const res = await fetch('/api/sekjur/dokumen');
             if (!res.ok) throw new Error('Gagal memuat data.');
-            setData(await res.json());
+            const jsonData = await res.json();
+            
+            // Pastikan recipients selalu array untuk menghindari error map
+            const safeSentDocuments = jsonData.sentDocuments.map(doc => ({
+                ...doc,
+                recipients: Array.isArray(doc.recipients) ? doc.recipients : []
+            }));
+
+            setData({ ...jsonData, sentDocuments: safeSentDocuments });
         } catch (error) {
             console.error(error);
         } finally {
@@ -99,20 +134,33 @@ export default function ManajemenDokumenPage() {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-gray-900">
                                 <tr>
-                                    <th className="p-3">Judul Dokumen</th>
-                                    <th className="p-3">Penerima</th>
-                                    <th className="p-3">Tanggal Kirim</th>
-                                    <th className="p-3">Aksi</th>
+                                    <th className="p-3 w-1/4">Judul Dokumen</th>
+                                    <th className="p-3 w-1/2">Penerima</th>
+                                    <th className="p-3 w-1/6">Tanggal Kirim</th>
+                                    <th className="p-3 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
                                 {data.sentDocuments.map(doc => (
                                     <tr key={doc.id}>
-                                        <td className="p-3 font-bold text-gray-900">{doc.title}</td>
-                                        <td className="p-3 text-xs text-gray-900">{doc.recipients.map(r => r.user.nama).join(', ')}</td>
-                                        <td className="p-3 font-medium text-gray-900">{new Date(doc.timestamp).toLocaleString('id-ID')}</td>
-                                        <td className="p-3">
-                                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center"><Download size={14} className="mr-1" /> Unduh</a>
+                                        <td className="p-3 font-bold text-gray-900 align-top">{doc.title}</td>
+                                        
+                                        {/* --- Update Bagian Ini: Menggunakan ExpandableText --- */}
+                                        <td className="p-3 text-xs text-gray-900 align-top">
+                                            <ExpandableText 
+                                                text={doc.recipients.map(r => r.user.nama).join(', ')} 
+                                                maxLength={120} 
+                                            />
+                                        </td>
+                                        {/* --------------------------------------------------- */}
+
+                                        <td className="p-3 font-medium text-gray-900 align-top">
+                                            {new Date(doc.timestamp).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="p-3 align-top text-center">
+                                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center justify-center">
+                                                <Download size={14} className="mr-1" /> Unduh
+                                            </a>
                                         </td>
                                     </tr>
                                 ))}

@@ -8,7 +8,8 @@ export default async function handler(req, res) {
 
     try {
         const decoded = jwt.verify(auth_token, process.env.JWT_SECRET);
-        if (decoded.selectedRole !== 'kajur' || !decoded.jurusanId) {
+        
+        if (decoded.selectedRole !== 'kajur' || !decoded.jurusan_id) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
@@ -17,7 +18,9 @@ export default async function handler(req, res) {
                 where: {
                     status: 'menunggu_kajur',
                     mahasiswa: {
-                        prodi: { jurusan_id: decoded.jurusanId }
+                        prodi: {
+                            jurusan_id: decoded.jurusan_id 
+                        }
                     }
                 },
                 include: {
