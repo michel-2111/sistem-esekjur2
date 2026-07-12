@@ -222,7 +222,7 @@ export default function AturPanitiaPage() {
                         {/* Info box */}
                         <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl mb-5"
                             style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
-                            <Info size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#8b5cf6' }} />
+                            <Info size={14} className="shrink-0 mt-0.5" style={{ color: '#8b5cf6' }} />
                             <p className="text-xs leading-relaxed" style={{ color: '#6d28d9' }}>
                                 Tentukan siapa yang berhak memvalidasi proposal TA mahasiswa agar statusnya menjadi <strong>Disetujui</strong>.
                             </p>

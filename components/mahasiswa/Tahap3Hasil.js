@@ -1,6 +1,6 @@
 import BeritaAcaraQR from '../BeritaAcaraQR';
 import TAStepCard from './TAStepCard';
-import { Lock, Clock, MessageSquare } from 'lucide-react';
+import { Lock, Clock, MessageSquare, Users, CalendarDays, MapPin } from 'lucide-react';
 
 function ExaminerCard({ ex, idx }) {
     const nilaiDosen = ex.grades?.reduce((total, g) => total + (g.score * g.component.bobot) / 100, 0) ?? 0;
@@ -78,10 +78,19 @@ function ExaminerCard({ ex, idx }) {
 }
 
 export default function Tahap3Hasil({ status, taData, hitungRataRata }) {
+    // Formatting tanggal dan waktu ujian
+    const examDateObj = taData?.exam_date ? new Date(taData.exam_date) : null;
+    const formattedDate = examDateObj 
+        ? examDateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) 
+        : 'Belum ditetapkan';
+    const formattedTime = examDateObj 
+        ? examDateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA' 
+        : '';
+
     return (
         <TAStepCard
             title="Tahap 3: Hasil Ujian Seminar Proposal"
-            subtitle="Nilai akhir, catatan revisi, dan Berita Acara Ujian"
+            subtitle="Jadwal, nilai akhir, catatan revisi, dan Berita Acara Ujian"
             status={status}
         >
             {status === 'locked' ? (
@@ -91,24 +100,89 @@ export default function Tahap3Hasil({ status, taData, hitungRataRata }) {
                 >
                     <Lock size={14} style={{ color: '#94a3b8' }} />
                     <p className="text-sm" style={{ color: '#94a3b8' }}>
-                        Selesaikan Tahap 2 dan tunggu jadwal ujian diterbitkan.
+                        Selesaikan Tahap 2 dan tunggu jadwal ujian diterbitkan oleh Panitia.
                     </p>
                 </div>
 
             ) : status === 'pending' ? (
-                <div
-                    className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
-                    style={{ background: '#fffbeb', border: '1px solid #fde68a' }}
-                >
-                    <Clock size={15} className="shrink-0 mt-0.5" style={{ color: '#f59e0b' }} />
-                    <div>
-                        <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
-                            Ujian Berlangsung / Menunggu Penilaian
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
-                            Harap tunggu hingga seluruh Tim Penguji selesai memberikan nilai dan catatan revisi.
-                        </p>
+                <div className="space-y-5">
+                    {/* Alert Box Ujian Berlangsung */}
+                    <div
+                        className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+                        style={{ background: '#fffbeb', border: '1px solid #fde68a' }}
+                    >
+                        <Clock size={15} className="shrink-0 mt-0.5" style={{ color: '#f59e0b' }} />
+                        <div>
+                            <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
+                                Ujian Dijadwalkan / Menunggu Penilaian
+                            </p>
+                            <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+                                Silakan hadir pada jadwal di bawah ini. Harap tunggu hingga seluruh Tim Penguji selesai memberikan nilai setelah ujian berakhir.
+                            </p>
+                        </div>
                     </div>
+
+                    {/* Informasi Jadwal & Lokasi */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Kartu Jadwal */}
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-50 text-blue-600 shrink-0">
+                                <CalendarDays size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-0.5">Jadwal Ujian</p>
+                                <p className="text-sm font-bold text-slate-800 truncate">
+                                    {formattedDate} {formattedTime && <span className="font-medium text-slate-500 ml-1">• {formattedTime}</span>}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Kartu Ruangan */}
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600 shrink-0">
+                                <MapPin size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-0.5">Lokasi / Ruangan</p>
+                                <p className="text-sm font-bold text-slate-800 truncate">
+                                    {taData?.exam_room || 'Belum ditetapkan'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Menampilkan Daftar Penguji saat Pending */}
+                    {taData?.examiners && taData.examiners.length > 0 && (
+                        <div className="pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-1.5 mb-3">
+                                <Users size={14} style={{ color: '#94a3b8' }} />
+                                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+                                    Tim Penguji Anda
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {taData.examiners.map((ex, idx) => {
+                                    const peranLabel = ex.peran === 'ketua' ? 'Ketua Penguji' : 'Anggota Penguji';
+                                    const isKetua = ex.peran === 'ketua';
+                                    
+                                    return (
+                                        <div key={idx} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm">
+                                            <div
+                                                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                                                style={{ background: isKetua ? '#f5f3ff' : '#eff6ff', color: isKetua ? '#6d28d9' : '#3b82f6' }}
+                                            >
+                                                {ex.dosen.nama?.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold truncate text-slate-800">{ex.dosen.nama}</p>
+                                                <p className="text-xs font-medium text-slate-500 mt-0.5">{peranLabel}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
             ) : (
@@ -124,8 +198,8 @@ export default function Tahap3Hasil({ status, taData, hitungRataRata }) {
                                 <p className="text-base font-bold" style={{ color: '#065f46' }}>
                                     Ujian Proposal Selesai
                                 </p>
-                                <p className="text-xs mt-0.5 italic" style={{ color: '#047857' }}>
-                                    {taData?.proposal_title}
+                                <p className="text-xs mt-1" style={{ color: '#047857' }}>
+                                    <span className="font-semibold text-emerald-700">Tanggal:</span> {formattedDate}
                                 </p>
                             </div>
                         </div>

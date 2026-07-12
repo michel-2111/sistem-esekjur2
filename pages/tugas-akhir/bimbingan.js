@@ -62,9 +62,27 @@ export default function BimbinganMahasiswaPage() {
         } catch (error) { alert(error.message); }
     };
 
-    const totalVerified = allLogbooks.filter(l => l.status === 'terverifikasi').length;
-    const progressPercentage = Math.min((totalVerified / 8) * 100, 100);
-    const isComplete = totalVerified >= 8;
+    // ── LOGIKA BARU: PROGRESS BERDASARKAN PER DOSEN (MINIMAL 9) ──
+    const targetPerSupervisor = 9;
+    const totalSupervisors = supervisors.length;
+    const totalTarget = totalSupervisors * targetPerSupervisor;
+
+    // Kalkulasi jumlah bimbingan yang sah untuk masing-masing dosen pembimbing
+    const verifiedPerSupervisor = supervisors.map(sup => {
+        const count = allLogbooks.filter(l => l.supervisor_id === sup.id && l.status === 'terverifikasi').length;
+        return {
+            ...sup,
+            verifiedCount: count,
+            isComplete: count >= targetPerSupervisor
+        };
+    });
+
+    // Kalkulasi untuk progress bar keseluruhan (dibatasi maks 9 per dosen agar tidak ada "kebocoran" progress)
+    const cappedTotalVerified = verifiedPerSupervisor.reduce((total, sup) => total + Math.min(sup.verifiedCount, targetPerSupervisor), 0);
+    const progressPercentage = totalTarget > 0 ? Math.min((cappedTotalVerified / totalTarget) * 100, 100) : 0;
+    
+    // Status final dianggap komplit JIKA SEMUA dosen sudah memenuhi target 9 sesi
+    const isComplete = totalSupervisors > 0 && verifiedPerSupervisor.every(sup => sup.isComplete);
 
     if (loading) return (
         <Layout>
@@ -99,7 +117,7 @@ export default function BimbinganMahasiswaPage() {
                                 Lembar Bimbingan Terpadu
                             </h1>
                             <p className="text-sm text-gray-500 mt-1">
-                                Total bimbingan dihitung dari akumulasi seluruh pembimbing.
+                                Total bimbingan membutuhkan minimal <strong>{targetPerSupervisor} sesi terverifikasi</strong> untuk tiap dosen pembimbing.
                             </p>
                         </div>
                     </div>
@@ -107,14 +125,16 @@ export default function BimbinganMahasiswaPage() {
 
                 {/* ── PROGRESS CARD ── */}
                 <div className={`rounded-2xl p-6 mb-8 border ${isComplete ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-col gap-4">
+                        
+                        {/* Progress Bar Keseluruhan */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
                                 <p className="text-sm font-semibold text-gray-700">
-                                    Progress Bimbingan
+                                    Progress Bimbingan Keseluruhan
                                 </p>
                                 <span className={`text-sm font-bold px-3 py-1 rounded-full ${isComplete ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
-                                    {totalVerified} / 8 Sesi
+                                    {cappedTotalVerified} / {totalTarget} Sesi
                                 </span>
                             </div>
                             <div className="w-full bg-white rounded-full h-3 shadow-inner border border-gray-200">
@@ -123,14 +143,41 @@ export default function BimbinganMahasiswaPage() {
                                     style={{ width: `${progressPercentage}%` }}
                                 />
                             </div>
+                        </div>
+
+                        {/* Rincian Progress per Dosen */}
+                        {supervisors.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                {verifiedPerSupervisor.map(sup => (
+                                    <div key={sup.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="flex items-center gap-2 min-w-0 pr-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                                <User size={12} className="text-gray-500" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-gray-700 truncate" title={sup.nama}>{sup.nama}</p>
+                                                <p className="text-[10px] uppercase font-semibold text-gray-400">{sup.peran}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded-md shrink-0 ${sup.isComplete ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                            {sup.verifiedCount} / {targetPerSupervisor}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Pesan Status */}
+                        <div className="mt-1">
                             {isComplete ? (
-                                <p className="text-sm text-green-700 mt-2.5 font-medium flex items-center gap-1.5">
-                                    <CheckCircle size={15} />
-                                    Syarat minimal bimbingan telah terpenuhi. Silakan lanjut ke tahap berikutnya.
+                                <p className="text-sm text-green-700 font-medium flex items-center gap-1.5 mt-2">
+                                    <CheckCircle size={16} />
+                                    Syarat minimal bimbingan dari semua dosen telah terpenuhi. Silakan lanjut ke tahap berikutnya.
                                 </p>
                             ) : (
-                                <p className="text-sm text-blue-700 mt-2.5">
-                                    Dibutuhkan <strong>{8 - totalVerified} sesi lagi</strong> untuk memenuhi syarat minimal.
+                                <p className="text-sm text-blue-700 mt-2 flex items-start gap-1.5">
+                                    <Clock size={16} className="shrink-0 mt-0.5" />
+                                    <span>Pastikan setiap dosen pembimbing memiliki minimal <strong>{targetPerSupervisor} sesi bimbingan</strong> yang telah terverifikasi.</span>
                                 </p>
                             )}
                         </div>

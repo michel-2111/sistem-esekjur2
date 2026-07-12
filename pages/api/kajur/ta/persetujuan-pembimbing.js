@@ -23,6 +23,7 @@ export default async function handler(req, res) {
 
         const jurusanId = kajur.jurusan_id;
 
+        // ── GET: Ambil Data Plotting Pembimbing ──
         if (req.method === 'GET') {
             const supervisors = await prisma.tA_Supervisor.findMany({
                 where: { mahasiswa: { jurusan_id: jurusanId } },
@@ -33,11 +34,11 @@ export default async function handler(req, res) {
                 orderBy: { updated_at: 'desc' }
             });
 
-            // ── Fetch proposal_title dari tA_Application ──
             const applications = await prisma.tA_Application.findMany({
                 where: { mahasiswa: { jurusan_id: jurusanId } },
                 select: { mahasiswa_id: true, proposal_title: true }
             });
+            
             const appMap = Object.fromEntries(
                 applications.map(a => [a.mahasiswa_id, a.proposal_title])
             );
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
                         mahasiswa_id: spv.mahasiswa_id,
                         mahasiswa: spv.mahasiswa,
                         status_kajur: spv.status_kajur,
-                        proposal_title: appMap[spv.mahasiswa_id] ?? null, // ── tambahan ──
+                        proposal_title: appMap[spv.mahasiswa_id] ?? null,
                         pembimbing: []
                     };
                     groupedData.push(existing);
@@ -58,8 +59,8 @@ export default async function handler(req, res) {
                 existing.pembimbing.push({
                     id: spv.id,
                     dosen_id: spv.dosen_id,
-                    nama_dosen: spv.dosen.nama,
-                    peran: spv.peran
+                    nama_dosen: spv.dosen.nama
+                    // Catatan: spv.peran telah dihapus dari sini
                 });
             });
 
@@ -75,9 +76,11 @@ export default async function handler(req, res) {
             return res.status(200).json({ data: groupedData, lecturers });
         }
 
+        // ── PUT: Update / Simpan Persetujuan Kajur ──
         if (req.method === 'PUT') {
             const { mahasiswa_id, status, dosen_ids, batch } = req.body;
 
+            // Fitur Batch Approve (Setujui Semua)
             if (batch) {
                 await prisma.tA_Supervisor.updateMany({
                     where: { 
@@ -95,6 +98,7 @@ export default async function handler(req, res) {
 
             const mahasiswaIdNum = Number(mahasiswa_id);
 
+            // Fitur Edit (Ubah Susunan Dosen) lalu Simpan
             if (dosen_ids && Array.isArray(dosen_ids) && dosen_ids.length > 0) {
                 const dosenIdsNum = dosen_ids.map(Number);
 
@@ -104,9 +108,13 @@ export default async function handler(req, res) {
                     });
 
                     const existingDosenIds = existingSpv.map(s => s.dosen_id);
+                    
+                    // Cari dosen yang dihapus oleh Kajur
                     const toDeleteIds = existingSpv
                         .filter(s => !dosenIdsNum.includes(s.dosen_id))
                         .map(s => s.id);
+                        
+                    // Cari dosen baru yang ditambahkan oleh Kajur
                     const toAddDosenIds = dosenIdsNum.filter(id => !existingDosenIds.includes(id));
 
                     if (toDeleteIds.length > 0) {
@@ -115,10 +123,10 @@ export default async function handler(req, res) {
 
                     if (toAddDosenIds.length > 0) {
                         await tx.tA_Supervisor.createMany({
-                            data: toAddDosenIds.map((id, index) => ({
+                            data: toAddDosenIds.map((id) => ({
                                 mahasiswa_id: mahasiswaIdNum,
                                 dosen_id: id,
-                                peran: index === 0 ? 'Pembimbing 1' : `Pembimbing ${index + 1}`,
+                                // Catatan: Variabel "peran" telah dihapus dari sini agar Prisma tidak error
                                 status_kajur: status
                             }))
                         });
@@ -130,6 +138,7 @@ export default async function handler(req, res) {
                     });
                 });
             } else {
+                // Fitur Setujui Langsung (Tanpa Edit)
                 await prisma.tA_Supervisor.updateMany({
                     where: { mahasiswa_id: mahasiswaIdNum },
                     data: { status_kajur: status }

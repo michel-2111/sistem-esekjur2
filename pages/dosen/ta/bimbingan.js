@@ -57,9 +57,8 @@ export default function BimbinganDosenPage() {
     };
 
     const handleApproveExam = async (isReady) => {
-        if (isReady && selectedStudent.total_kumulatif < 8) {
-            if (!confirm(`PERINGATAN: Mahasiswa ini baru melakukan bimbingan sebanyak ${selectedStudent.total_kumulatif} kali (syarat minimal 8).\n\nApakah Anda yakin ingin melakukan bypass dan menyetujui mahasiswa ini untuk Sidang Akhir?`)) return;
-        } else if (isReady) {
+        // Logika bypass telah dihapus sepenuhnya
+        if (isReady) {
             if (!confirm("Setujui mahasiswa ini untuk mendaftar Sidang Akhir?")) return;
         } else {
             if (!confirm("Batalkan persetujuan Sidang Akhir?")) return;
@@ -206,22 +205,22 @@ export default function BimbinganDosenPage() {
                                             </p>
                                         </div>
 
-                                        {/* Progress badge */}
+                                        {/* Progress badge (Diubah menjadi 9) */}
                                         <div className={`flex-shrink-0 px-5 py-3 rounded-xl border text-center ${
-                                            selectedStudent.total_kumulatif >= 8
+                                            selectedStudent.total_kumulatif >= 9
                                                 ? 'bg-green-50 border-green-200'
                                                 : 'bg-blue-50 border-blue-200'
                                         }`}>
                                             <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${
-                                                selectedStudent.total_kumulatif >= 8 ? 'text-green-600' : 'text-blue-600'
+                                                selectedStudent.total_kumulatif >= 9 ? 'text-green-600' : 'text-blue-600'
                                             }`}>
-                                                Progress Kumulatif
+                                                Progress Bimbingan Anda
                                             </p>
                                             <p className={`text-3xl font-black leading-none ${
-                                                selectedStudent.total_kumulatif >= 8 ? 'text-green-700' : 'text-blue-800'
+                                                selectedStudent.total_kumulatif >= 9 ? 'text-green-700' : 'text-blue-800'
                                             }`}>
                                                 {selectedStudent.total_kumulatif}
-                                                <span className="text-sm font-medium text-gray-400 ml-1">/ 8</span>
+                                                <span className="text-sm font-medium text-gray-400 ml-1">/ 9</span>
                                             </p>
                                         </div>
                                     </div>
@@ -235,7 +234,7 @@ export default function BimbinganDosenPage() {
                                                     Final Clearance — Persetujuan Sidang Akhir
                                                 </p>
                                                 <p className="text-xs text-gray-500 mt-1 max-w-sm leading-relaxed">
-                                                    Setujui jika mahasiswa dirasa sudah siap untuk mengikuti Sidang Akhir. Persetujuan dapat dibatalkan.
+                                                    Persetujuan baru dapat diberikan setelah mahasiswa menyelesaikan minimal 9 sesi bimbingan bersama Anda.
                                                 </p>
                                             </div>
 
@@ -248,14 +247,13 @@ export default function BimbinganDosenPage() {
                                                     <CheckCircle size={15} />
                                                     Disetujui — Batalkan
                                                 </button>
-                                            ) : selectedStudent.total_kumulatif < 8 ? (
+                                            ) : selectedStudent.total_kumulatif < 9 ? (
                                                 <button
-                                                    onClick={() => handleApproveExam(true)}
-                                                    disabled={isProcessing}
-                                                    className="flex-shrink-0 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl disabled:opacity-50 transition-colors flex items-center gap-2 text-sm shadow-sm"
+                                                    disabled
+                                                    className="flex-shrink-0 px-4 py-2.5 bg-gray-100 text-gray-400 font-semibold rounded-xl cursor-not-allowed flex items-center gap-2 text-sm border border-gray-200"
                                                 >
                                                     <AlertTriangle size={15} />
-                                                    Bypass Syarat &amp; Setujui
+                                                    Belum Memenuhi Syarat (Min. 9)
                                                 </button>
                                             ) : (
                                                 <button
