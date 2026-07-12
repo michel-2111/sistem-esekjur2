@@ -6,7 +6,8 @@ import { useRouter } from 'next/router';
 import { Plus } from 'lucide-react';
 import UserInfoModal from '../components/shared/UserInfoModal';
 
-// Import Komponen Baru
+// --- IMPORT KOMPONEN ANDA ---
+import ConfirmationModal from '../components/shared/ConfirmationModal'; // Menggunakan file yang sudah Anda punya
 import DosenFormModal from '../components/sekjur/manajemen-dosen/DosenFormModal';
 import { RekapSksTable, CrudDosenTable } from '../components/sekjur/manajemen-dosen/DosenTables';
 
@@ -14,7 +15,7 @@ export default function ManajemenDosenPage() {
     const { user, isAuthenticated } = useAppContext();
     const router = useRouter();
     
-    // State
+    // State Data
     const [activeTab, setActiveTab] = useState('rekap');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -24,19 +25,22 @@ export default function ManajemenDosenPage() {
     const [selectedPeriodId, setSelectedPeriodId] = useState('latest');
     const [prodiList, setProdiList] = useState([]);
 
-    // State Modal & Aksi
+    // State Modal Form & Detail
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add');
-    const [selectedDosen, setSelectedDosen] = useState(null); // Untuk edit form
-    const [detailDosen, setDetailDosen] = useState(null); // Untuk modal detail (View only)
+    const [selectedDosen, setSelectedDosen] = useState(null); // Untuk edit
+    const [detailDosen, setDetailDosen] = useState(null); // Untuk view detail
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // --- STATE UNTUK CONFIRMATION MODAL ---
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [dosenToDelete, setDosenToDelete] = useState(null);
 
     // --- FETCH DATA ---
     const fetchData = useCallback(async (periodId = 'latest') => {
         setLoading(true);
         setError('');
         try {
-            // 1. Data Dosen & SKS
             const res = await fetch(`/api/sekjur/manajemen-dosen${periodId !== 'latest' ? `?periodId=${periodId}` : ''}`);
             if (!res.ok) throw new Error('Gagal memuat data dosen.');
             const data = await res.json();
@@ -45,7 +49,6 @@ export default function ManajemenDosenPage() {
             setSaCourses(Array.isArray(data.saCourses) ? data.saCourses : []);
             setAcademicPeriods(Array.isArray(data.academicPeriods) ? data.academicPeriods : []);
 
-            // 2. Data Prodi (Hanya fetch sekali atau jika kosong)
             if (prodiList.length === 0) {
                 const resProdi = await fetch('/api/master/prodi');
                 if (resProdi.ok) setProdiList(await resProdi.json());
@@ -72,24 +75,39 @@ export default function ManajemenDosenPage() {
             .reduce((total, course) => total + (course?.course?.sks || 0), 0);
     }, [saCourses]);
 
+    // Buka Modal Tambah/Edit
     const handleOpenModal = (mode, dosen = null) => {
         setModalMode(mode);
         setSelectedDosen(dosen);
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (dosenId) => {
-        if (!confirm('Hapus dosen ini? Data terkait mungkin akan hilang/error.')) return;
+    // 1. Trigger saat tombol hapus diklik (Buka Modal Konfirmasi)
+    const confirmDelete = (dosenId) => {
+        setDosenToDelete(dosenId);
+        setIsDeleteModalOpen(true);
+    };
+
+    // 2. Eksekusi Hapus (Dipanggil jika user klik "Hapus" di modal)
+    const executeDelete = async () => {
+        if (!dosenToDelete) return;
+        
         try {
-            const res = await fetch(`/api/sekjur/dosen-crud?id=${dosenId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/sekjur/dosen-crud?id=${dosenToDelete}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Gagal menghapus');
-            alert('Dosen dihapus.');
+            
+            // Sukses
+            alert('Dosen berhasil dihapus.'); // Fallback alert sederhana untuk sukses
             fetchData(selectedPeriodId);
         } catch (err) {
             alert(err.message);
+        } finally {
+            setIsDeleteModalOpen(false);
+            setDosenToDelete(null);
         }
     };
 
+    // Submit Form Tambah/Edit
     const handleFormSubmit = async (formData) => {
         setIsSubmitting(true);
         try {
@@ -119,12 +137,10 @@ export default function ManajemenDosenPage() {
 
     if (!user || user.selectedRole !== 'sekjur') return <Layout><p>Akses Ditolak.</p></Layout>;
 
-    // --- RENDER PAGE ---
     const selectedPeriodName = academicPeriods.find(p => p.id === selectedPeriodId)?.nama || 'Periode SA Aktif';
 
     return (
         <Layout>
-            {/* Header & Switch */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h1 className="text-3xl font-bold text-gray-800">Manajemen Dosen</h1>
                 <div className="bg-gray-200 p-1 rounded-lg flex">
@@ -141,26 +157,21 @@ export default function ManajemenDosenPage() {
 
             {activeTab === 'rekap' && (
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex justify-between items-center mb-4 ">
-                        <h2 className="text-xl font-bold text-gray-900">Beban SKS ({selectedPeriodName})</h2>
-                        <select value={selectedPeriodId} onChange={(e) => { setSelectedPeriodId(e.target.value); fetchData(e.target.value); }} className="border border-gray-300 p-2 rounded-md bg-white shadow-sm text-sm text-gray-900">
-                            <option value="latest">Periode Terbaru</option>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-gray-800">Beban SKS ({selectedPeriodName})</h2>
+                        <select value={selectedPeriodId} onChange={(e) => { setSelectedPeriodId(e.target.value); fetchData(e.target.value); }} className="border border-gray-300 p-2 rounded-md bg-white shadow-sm text-sm text-gray-800">
+                            <option value="latest" >Periode Terbaru</option>
                             {academicPeriods.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
                         </select>
                     </div>
-                    <RekapSksTable 
-                        lecturers={lecturers} 
-                        loading={loading} 
-                        calculateSksFn={calculateSksForDosen} 
-                        onDetail={setDetailDosen} 
-                    />
+                    <RekapSksTable lecturers={lecturers} loading={loading} calculateSksFn={calculateSksForDosen} onDetail={setDetailDosen} />
                 </div>
             )}
 
             {activeTab === 'crud' && (
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">Daftar Semua Dosen</h2>
+                        <h2 className="text-xl font-bold text-gray-800">Daftar Semua Dosen</h2>
                         <button onClick={() => handleOpenModal('add')} className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center text-sm hover:bg-blue-700 transition">
                             <Plus size={16} className="mr-2" /> Tambah Dosen
                         </button>
@@ -169,12 +180,11 @@ export default function ManajemenDosenPage() {
                         lecturers={lecturers} 
                         loading={loading} 
                         onEdit={(dosen) => handleOpenModal('edit', dosen)} 
-                        onDelete={handleDelete} 
+                        onDelete={confirmDelete} 
                     />
                 </div>
             )}
 
-            {/* MODALS */}
             <DosenFormModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
@@ -184,9 +194,19 @@ export default function ManajemenDosenPage() {
                 isSubmitting={isSubmitting}
             />
 
-            {detailDosen && (
-                <UserInfoModal user={detailDosen} onClose={() => setDetailDosen(null)} />
-            )}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={executeDelete}
+                title="Hapus Data Dosen"
+                confirmText="Hapus"
+                confirmColor="bg-red-600 hover:bg-red-700" // Agar tombol jadi merah
+            >
+                Apakah Anda yakin ingin menghapus data dosen ini?
+                
+            </ConfirmationModal>
+
+            {detailDosen && <UserInfoModal user={detailDosen} onClose={() => setDetailDosen(null)} />}
         </Layout>
     );
 }

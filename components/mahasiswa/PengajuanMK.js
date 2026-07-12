@@ -1,6 +1,6 @@
 // components/mahasiswa/PengajuanMK.js
 import { useState, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, BookOpen, CheckCircle2, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
 
 export default function PengajuanMK({ application, onSuccess }) {
     const [coursesBySemester, setCoursesBySemester] = useState({});
@@ -12,6 +12,9 @@ export default function PengajuanMK({ application, onSuccess }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const maxSks = application.max_sks;
+    const sksPercent = Math.min((currentSks / maxSks) * 100, 100);
+    const isOverLimit = currentSks > maxSks;
+    const isFull = currentSks === maxSks;
 
     useEffect(() => {
         fetch('/api/master/courses')
@@ -25,8 +28,8 @@ export default function PengajuanMK({ application, onSuccess }) {
             .then(data => {
                 if (data && typeof data === 'object' && !Array.isArray(data)) {
                     setCoursesBySemester(data);
-                    const firstSemesterWithCourses = Object.keys(data)[0];
-                    if(firstSemesterWithCourses) setSelectedSemester(firstSemesterWithCourses);
+                    const first = Object.keys(data)[0];
+                    if (first) setSelectedSemester(first);
                 } else {
                     setCoursesBySemester({});
                 }
@@ -36,8 +39,7 @@ export default function PengajuanMK({ application, onSuccess }) {
     }, []);
 
     useEffect(() => {
-        const totalSks = selectedCourses.reduce((sum, course) => sum + course.sks, 0);
-        setCurrentSks(totalSks);
+        setCurrentSks(selectedCourses.reduce((sum, c) => sum + c.sks, 0));
     }, [selectedCourses]);
 
     const handleCourseToggle = (course, isChecked) => {
@@ -72,8 +74,7 @@ export default function PengajuanMK({ application, onSuccess }) {
                 const data = await res.json();
                 throw new Error(data.message || 'Gagal mengirim pengajuan.');
             }
-            const updatedApplication = await res.json();
-            onSuccess(updatedApplication);
+            onSuccess(await res.json());
         } catch (err) {
             setError(err.message);
         } finally {
@@ -81,47 +82,182 @@ export default function PengajuanMK({ application, onSuccess }) {
         }
     };
 
-    if (loading) return <p>Memuat mata kuliah...</p>;
+    if (loading) {
+        return (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 flex flex-col items-center gap-3 text-slate-400">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <p className="text-sm">Memuat daftar mata kuliah...</p>
+            </div>
+        );
+    }
+
+    const coursesInSemester = coursesBySemester[selectedSemester] || [];
+    const semesterKeys = Object.keys(coursesBySemester);
 
     return (
-        <div className="bg-white p-8 rounded-lg shadow-md w-full text-gray-900">
-            <h2 className="text-2xl font-bold">Pembayaran Terkonfirmasi!</h2>
-            <p className="text-gray-600 mt-2">Anda dapat mengambil maksimal <span className="font-bold">{maxSks} SKS</span>.</p>
-            <p className="text-gray-600 mb-6">Silakan pilih semester, lalu pilih mata kuliah yang ingin Anda ambil.</p>
-            
-            <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center mb-6">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Header banner */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-5">
+                <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="h-4 w-4 text-blue-200" />
+                    <p className="text-xs font-semibold text-blue-200 uppercase tracking-widest">Pembayaran Terkonfirmasi</p>
+                </div>
+                <h2 className="text-lg font-bold text-white">Pengajuan Mata Kuliah</h2>
+                <p className="text-sm text-blue-100 mt-0.5">
+                    Pilih mata kuliah yang ingin Anda ambil — maksimal <span className="font-bold text-white">{maxSks} SKS</span>.
+                </p>
+            </div>
+
+            <div className="p-6 space-y-5">
+                {/* SKS Tracker */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total SKS Dipilih</p>
+                        <span className={`text-sm font-bold tabular-nums ${isOverLimit ? 'text-red-600' : isFull ? 'text-emerald-600' : 'text-slate-800'}`}>
+                            {currentSks} <span className="font-normal text-slate-400">/ {maxSks} SKS</span>
+                        </span>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                                isOverLimit ? 'bg-red-500' : isFull ? 'bg-emerald-500' : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${sksPercent}%` }}
+                        />
+                    </div>
+                    {isFull && !isOverLimit && (
+                        <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Kuota SKS penuh
+                        </p>
+                    )}
+                    {isOverLimit && (
+                        <p className="text-xs text-red-600 font-medium flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5" /> Melebihi batas SKS
+                        </p>
+                    )}
+                </div>
+
+                {/* Semester Selector */}
                 <div>
-                    <label htmlFor="semester-select" className="block text-sm font-medium text-gray-700 mb-1">Pilih Semester</label>
-                    <select id="semester-select" value={selectedSemester} onChange={e => setSelectedSemester(e.target.value)} className="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        {Object.keys(coursesBySemester).length > 0 ? Object.keys(coursesBySemester).map(sem => 
-                            <option key={sem} value={sem}>Semester {sem}</option>
-                        ) : <option>Loading...</option>}
-                    </select>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                        Semester
+                    </label>
+                    <div className="relative">
+                        <select
+                            value={selectedSemester}
+                            onChange={e => setSelectedSemester(e.target.value)}
+                            className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer"
+                        >
+                            {semesterKeys.length > 0
+                                ? semesterKeys.map(sem => (
+                                    <option key={sem} value={sem}>Semester {sem}</option>
+                                ))
+                                : <option>Tidak ada data</option>
+                            }
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    </div>
                 </div>
-                <div className={`font-bold text-lg p-3 rounded-md ${currentSks > maxSks ? 'text-red-700 bg-red-100' : 'text-green-700 bg-green-100'}`}>
-                    Total SKS: {currentSks} / {maxSks}
-                </div>
-            </div>
 
-            <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                {Object.entries(coursesBySemester).length > 0 ? (
-                    (coursesBySemester[selectedSemester] || []).map(course => (
-                        <label key={course.id} className="flex items-center p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                            <input type="checkbox" onChange={(e) => handleCourseToggle(course, e.target.checked)} className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                            <span className="ml-4 text-gray-800">{course.nama} ({course.sks} SKS)</span>
+                {/* Course List */}
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            Mata Kuliah
                         </label>
-                    ))
-                ) : (
-                    <p className="text-gray-500 text-center">Tidak ada mata kuliah yang tersedia.</p>
+                        <span className="text-xs text-slate-400">
+                            {selectedCourses.filter(c => coursesInSemester.some(x => x.id === c.id)).length} dipilih
+                        </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1 -mr-1">
+                        {coursesInSemester.length > 0 ? (
+                            coursesInSemester.map(course => {
+                                const isSelected = selectedCourses.some(c => c.id === course.id);
+                                const wouldExceed = !isSelected && currentSks + course.sks > maxSks;
+
+                                return (
+                                    <label
+                                        key={course.id}
+                                        className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                                            isSelected
+                                                ? 'border-blue-300 bg-blue-50 shadow-sm'
+                                                : wouldExceed
+                                                ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
+                                                : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            disabled={wouldExceed}
+                                            onChange={e => handleCourseToggle(course, e.target.checked)}
+                                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-sm font-medium truncate ${isSelected ? 'text-blue-800' : 'text-slate-800'}`}>
+                                                {course.nama}
+                                            </p>
+                                        </div>
+                                        <span className={`shrink-0 text-xs font-semibold px-2 py-1 rounded-lg ${
+                                            isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                            {course.sks} SKS
+                                        </span>
+                                    </label>
+                                );
+                            })
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                                <BookOpen className="h-7 w-7 text-slate-300 mb-2" />
+                                <p className="text-sm">Tidak ada mata kuliah di semester ini.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Selected summary chips */}
+                {selectedCourses.length > 0 && (
+                    <div>
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Dipilih</p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {selectedCourses.map(c => (
+                                <span
+                                    key={c.id}
+                                    className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 font-medium px-2.5 py-1 rounded-full"
+                                >
+                                    {c.nama}
+                                    <button
+                                        onClick={() => handleCourseToggle(c, false)}
+                                        className="ml-0.5 text-blue-400 hover:text-blue-700"
+                                    >×</button>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
                 )}
+
+                {/* Error */}
+                {error && (
+                    <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-3.5">
+                        <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-red-700 font-medium">{error}</p>
+                    </div>
+                )}
+
+                {/* Submit */}
+                <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || selectedCourses.length === 0 || isOverLimit}
+                    className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-semibold py-3 px-4 rounded-xl transition-colors shadow-sm"
+                >
+                    {isSubmitting
+                        ? <><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</>
+                        : <><Send className="h-4 w-4" /> Kirim Pengajuan</>
+                    }
+                </button>
             </div>
-
-            {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
-
-            <button onClick={handleSubmit} disabled={isSubmitting} className="w-full flex justify-center items-center py-2.5 px-4 mt-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">
-                <Send className="h-5 w-5 mr-2" />
-                {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}
-            </button>
         </div>
     );
 }

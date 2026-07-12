@@ -1,34 +1,76 @@
 // components/mahasiswa/MahasiswaDashboard.js
 import { useEffect, useState } from 'react';
-import { useAppContext } from '../../context/AppContext'; // Impor hook konteks
-import PeriodBanner from '../shared/PeriodBanner'; // Impor banner
+import { useAppContext } from '../../context/AppContext';
+import PeriodBanner from '../shared/PeriodBanner';
 import LeaveStatusBanner from './LeaveStatusBanner';
+import { BookOpen, FileText, AlertCircle, User, GraduationCap } from 'lucide-react';
 
-const StatusBadge = ({ status }) => {
-    const statusMap = {
-        menunggu_verifikasi_pembayaran: { text: 'Menunggu Verifikasi', color: 'bg-cyan-100 text-cyan-800' },
-        menunggu_pengajuan_mk: { text: 'Pengajuan MK', color: 'bg-blue-100 text-blue-800' },
-        menunggu_penugasan_dosen: { text: 'Menunggu Dosen', color: 'bg-purple-100 text-purple-800' },
-        aktif: { text: 'Aktif', color: 'bg-green-100 text-green-800' },
-        telah_dinilai: { text: 'Telah Dinilai', color: 'bg-indigo-100 text-indigo-800' },
-        selesai: { text: 'Selesai', color: 'bg-gray-200 text-gray-800' },
-        pembayaran_ditolak: { text: 'Ditolak', color: 'bg-red-100 text-red-800' },
-        belum_memulai: { text: 'Belum Memulai', color: 'bg-gray-200 text-gray-700' },
-    };
-    const statusInfo = statusMap[status] || { text: status, color: 'bg-gray-200 text-gray-700' };
-    return <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.text}</span>;
+const STATUS_SA = {
+    menunggu_verifikasi_pembayaran: { text: 'Menunggu Verifikasi', style: 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200' },
+    menunggu_pengajuan_mk:          { text: 'Pengajuan MK',        style: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' },
+    menunggu_penugasan_dosen:       { text: 'Menunggu Dosen',      style: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
+    aktif:                          { text: 'Aktif',               style: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+    telah_dinilai:                  { text: 'Telah Dinilai',       style: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' },
+    selesai:                        { text: 'Selesai',             style: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' },
+    pembayaran_ditolak:             { text: 'Ditolak',             style: 'bg-red-50 text-red-700 ring-1 ring-red-200' },
+    belum_memulai:                  { text: 'Belum Memulai',       style: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200' },
 };
 
-const LeaveStatusBadge = ({ status }) => {
-    const statusMap = {
-        menunggu_kajur: { text: 'Menunggu Kajur', color: 'bg-yellow-100 text-yellow-800' },
-        menunggu_wadir: { text: 'Menunggu Wadir', color: 'bg-purple-100 text-purple-800' },
-        disetujui: { text: 'Disetujui', color: 'bg-green-100 text-green-800' },
-        ditolak: { text: 'Ditolak', color: 'bg-red-100 text-red-800' },
-    };
-    const statusInfo = statusMap[status] || { text: status, color: 'bg-gray-200 text-gray-700' };
-    return <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.text}</span>;
+const STATUS_LEAVE = {
+    menunggu_kajur: { text: 'Menunggu Kajur',  style: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
+    menunggu_wadir: { text: 'Menunggu Wadir',  style: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' },
+    disetujui:      { text: 'Disetujui',       style: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+    ditolak:        { text: 'Ditolak',         style: 'bg-red-50 text-red-700 ring-1 ring-red-200' },
 };
+
+const StatusBadge = ({ status, map }) => {
+    const info = map[status] || { text: status, style: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' };
+    return (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide ${info.style}`}>
+            {info.text}
+        </span>
+    );
+};
+
+const RejectionNotice = ({ reason }) => (
+    <div className="mt-3 flex gap-2 items-start bg-red-50 border border-red-100 rounded-xl p-3">
+        <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+        <div>
+            <p className="text-xs font-semibold text-red-700 mb-0.5">Alasan Penolakan</p>
+            <p className="text-xs text-red-600 leading-relaxed">{reason}</p>
+        </div>
+    </div>
+);
+
+const InfoRow = ({ label, value }) => (
+    <div className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+        <span className="text-sm text-slate-500">{label}</span>
+        <span className="text-sm font-semibold text-slate-800">{value || 'N/A'}</span>
+    </div>
+);
+
+const StatusRow = ({ icon: Icon, label, badge, rejection }) => (
+    <div className="py-3 border-b border-slate-100 last:border-0">
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4 text-slate-400" />
+                <span className="text-sm font-medium text-slate-700">{label}</span>
+            </div>
+            {badge}
+        </div>
+        {rejection && <RejectionNotice reason={rejection} />}
+    </div>
+);
+
+const SkeletonCard = () => (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 animate-pulse space-y-4">
+        <div className="h-4 bg-slate-200 rounded w-1/3" />
+        <div className="space-y-2">
+            <div className="h-3 bg-slate-100 rounded w-full" />
+            <div className="h-3 bg-slate-100 rounded w-5/6" />
+        </div>
+    </div>
+);
 
 export default function MahasiswaDashboard({ user }) {
     const { activePeriod } = useAppContext();
@@ -43,54 +85,77 @@ export default function MahasiswaDashboard({ user }) {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <p>Memuat dasbor...</p>;
+    if (loading) {
+        return (
+            <div className="space-y-6 p-1">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <SkeletonCard /><SkeletonCard />
+                </div>
+                <div className="h-7 bg-slate-200 rounded w-56 animate-pulse" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <SkeletonCard /><SkeletonCard />
+                </div>
+            </div>
+        );
+    }
 
-    const saStatus = data?.saApplication?.status || 'belum_memulai';
+    const saStatus    = data?.saApplication?.status || 'belum_memulai';
     const leaveStatus = data?.leaveApplication?.status;
 
     return (
-        <div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="space-y-6 p-1">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <LeaveStatusBanner leaveApplication={data?.leaveApplication} />
                 <PeriodBanner period={activePeriod} />
             </div>
-            
-            <h1 className="text-3xl font-bold mb-6 text-gray-900">Dashboard Mahasiswa</h1>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-lg font-semibold mb-3 text-gray-800">Informasi Mahasiswa</h2>
-                    <div className="space-y-2 text-sm">
-                        <p className="text-gray-500">Jurusan: <span className="font-medium text-gray-800">{data?.userDetails?.prodi?.jurusan?.nama || 'N/A'}</span></p>
-                        <p className="text-gray-500">Program Studi: <span className="font-medium text-gray-800">{data?.userDetails?.prodi?.nama || 'N/A'}</span></p>
+            <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Selamat Datang</p>
+                <h1 className="text-2xl font-bold text-slate-900">Dashboard Mahasiswa</h1>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="p-2 bg-indigo-50 rounded-xl">
+                            <User className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <h2 className="text-base font-bold text-slate-800">Informasi Mahasiswa</h2>
+                    </div>
+                    <div>
+                        <InfoRow label="Jurusan"       value={data?.userDetails?.prodi?.jurusan?.nama} />
+                        <InfoRow label="Program Studi" value={data?.userDetails?.prodi?.nama} />
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-800">Status Pengajuan</h2>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm font-bold">
-                            <span className="font-medium text-gray-800">Semester Antara</span>
-                            <StatusBadge status={saStatus} />
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="p-2 bg-emerald-50 rounded-xl">
+                            <FileText className="h-5 w-5 text-emerald-600" />
                         </div>
-                        {data?.saApplication?.alasan_ditolak && (
-                            <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-3 text-xs rounded-r-md">
-                                <p className="font-bold">Alasan Ditolak:</p>
-                                <p>{data.saApplication.alasan_ditolak}</p>
-                            </div>
-                        )}
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-gray-800">Cuti Akademik</span>
-                            {leaveStatus ? <LeaveStatusBadge status={leaveStatus} /> : <span className="text-gray-500">Belum Mengajukan</span>}
-                        </div>
-                        {data?.leaveApplication?.alasan_ditolak && (
-                            <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-3 text-xs rounded-r-md">
-                                <p className="font-bold">Alasan Ditolak:</p>
-                                <p>{data.leaveApplication.alasan_ditolak}</p>
-                            </div>
-                        )}
+                        <h2 className="text-base font-bold text-slate-800">Status Pengajuan</h2>
+                    </div>
+                    <div>
+                        <StatusRow
+                            icon={GraduationCap}
+                            label="Semester Antara"
+                            badge={<StatusBadge status={saStatus} map={STATUS_SA} />}
+                            rejection={data?.saApplication?.alasan_ditolak}
+                        />
+                        <StatusRow
+                            icon={BookOpen}
+                            label="Cuti Akademik"
+                            badge={
+                                leaveStatus
+                                    ? <StatusBadge status={leaveStatus} map={STATUS_LEAVE} />
+                                    : <span className="text-xs text-slate-400 italic">Belum mengajukan</span>
+                            }
+                            rejection={data?.leaveApplication?.alasan_ditolak}
+                        />
                     </div>
                 </div>
+
             </div>
         </div>
     );

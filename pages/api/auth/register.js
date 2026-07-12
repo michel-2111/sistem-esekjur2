@@ -1,53 +1,55 @@
-import bcrypt from 'bcryptjs';
+// pages/api/auth/register.js
 import prisma from '../../../lib/prisma';
+import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const { nama, identifier, password, prodiId } = req.body;
+    const { nama, identifier, password, prodiId } = req.body; // Ubah sesuai frontend
 
     if (!nama || !identifier || !password || !prodiId) {
-        return res.status(400).json({ message: 'Semua field wajib diisi' });
+        return res.status(400).json({ message: 'Semua field wajib diisi.' });
     }
 
     try {
         const existingUser = await prisma.user.findUnique({
-            where: { identifier },
+            where: { identifier: identifier } // Ubah dari nim ke identifier
         });
 
         if (existingUser) {
-            return res.status(409).json({ message: 'NIM sudah terdaftar' });
+            return res.status(400).json({ message: 'NIM sudah terdaftar.' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 12);
-
-        const studentRole = await prisma.role.findUnique({
-            where: { nama_role: 'mahasiswa' },
+        const prodiInfo = await prisma.prodi.findUnique({
+            where: { id: prodiId }, // Ubah dari prodi_id ke prodiId
+            select: { jurusan_id: true }
         });
 
-        if (!studentRole) {
-            return res.status(500).json({ message: 'Role mahasiswa tidak ditemukan. Jalankan seeding.' });
+        if (!prodiInfo) {
+            return res.status(400).json({ message: 'Program Studi tidak valid.' });
         }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         await prisma.user.create({
             data: {
                 nama,
-                identifier,
+                identifier: identifier,
                 password: hashedPassword,
                 prodi_id: prodiId,
+                jurusan_id: prodiInfo.jurusan_id,
                 roles: {
-                    create: {
-                        role_id: studentRole.id,
-                    },
-                },
-            },
+                    create: { role: { connect: { nama_role: 'mahasiswa' } } }
+                }
+            }
         });
 
-        res.status(201).json({ message: 'Registrasi berhasil!' });
+        return res.status(201).json({ message: 'Registrasi berhasil. Silakan login.' });
+
     } catch (error) {
-        console.error("Registration Error:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+        console.error("Register Error:", error);
+        return res.status(500).json({ message: 'Terjadi kesalahan server.' });
     }
 }

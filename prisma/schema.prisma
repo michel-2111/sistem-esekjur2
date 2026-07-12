@@ -9,12 +9,15 @@ datasource db {
 }
 
 model Jurusan {
-  id    String  @id @db.VarChar(10)
-  nama  String  @db.VarChar(255)
-  prodi Prodi[]
-  users User[]
-  ta_committees TA_Committee[]
-  ta_settings   TA_Settings?
+  id                         String                    @id @db.VarChar(10)
+  nama                       String                    @db.VarChar(255)
+  prodi                      Prodi[]
+  users                      User[]
+  ta_committees              TA_Committee[]
+  ta_settings                TA_Settings?
+  // Relasi baru: Daftar dokumen wajib per jurusan
+  ta_document_requirements   TA_Document_Requirement[]
+  ta_assessment_components   TA_Assessment_Component[] 
 }
 
 model Prodi {
@@ -27,26 +30,29 @@ model Prodi {
 }
 
 model User {
-  id                  Int                  @id @default(autoincrement())
-  nama                String               @db.VarChar(255)
-  identifier          String               @unique @db.VarChar(50)
-  password            String               @db.VarChar(255)
-  telepon             String?              @db.VarChar(20)
-  nomor_rekening      String?              @db.VarChar(50)
-  prodi_id            String?              @db.VarChar(20)
-  jurusan_id          String?              @db.VarChar(10)
+  id                 Int                  @id @default(autoincrement())
+  nama               String               @db.VarChar(255)
+  identifier         String               @unique @db.VarChar(50)
+  password           String               @db.VarChar(255)
+  telepon            String?              @db.VarChar(20)
+  nomor_rekening     String?              @db.VarChar(50)
+  prodi_id           String?              @db.VarChar(20)
+  jurusan_id         String?              @db.VarChar(10)
   application_courses Application_Course[]
-  course_pengampu     Course_Pengampu[]
-  sent_documents      Document[]
-  received_documents  Document_Recipient[]
-  uploaded_templates  Document_Template[]
-  leave_applications  Leave_Application[]
-  sa_applications     SA_Application[]
-  jurusan             Jurusan?             @relation(fields: [jurusan_id], references: [id])
-  prodi               Prodi?               @relation(fields: [prodi_id], references: [id])
-  roles               User_Roles[]
-  ta_applications     TA_Application[]
-  ta_committees       TA_Committee[]
+  course_pengampu    Course_Pengampu[]
+  sent_documents     Document[]
+  received_documents Document_Recipient[]
+  uploaded_templates Document_Template[]
+  leave_applications Leave_Application[]
+  sa_applications    SA_Application[]
+  jurusan            Jurusan?             @relation(fields: [jurusan_id], references: [id])
+  prodi              Prodi?               @relation(fields: [prodi_id], references: [id])
+  roles              User_Roles[]
+  ta_applications    TA_Application[]
+  ta_committees      TA_Committee[]
+  ta_exams           TA_Examiner[]
+  pembimbing_mahasiswa  TA_Supervisor[] @relation("MahasiswaBimbingan")
+  bimbingan_dosen       TA_Supervisor[] @relation("DosenPembimbing")
 }
 
 model Role {
@@ -74,15 +80,15 @@ model Academic_Period {
 }
 
 model Course {
-  id                  Int                  @id @default(autoincrement())
-  kode                String               @unique @db.VarChar(20)
-  nama                String               @db.VarChar(255)
-  sks                 Int
-  semester            Int
-  prodi_id            String               @db.VarChar(20)
+  id                 Int                  @id @default(autoincrement())
+  kode               String               @unique @db.VarChar(20)
+  nama               String               @db.VarChar(255)
+  sks                Int
+  semester           Int
+  prodi_id           String               @db.VarChar(20)
   application_courses Application_Course[]
-  prodi               Prodi                @relation(fields: [prodi_id], references: [id])
-  pengampu            Course_Pengampu[]
+  prodi              Prodi                @relation(fields: [prodi_id], references: [id])
+  pengampu           Course_Pengampu[]
 }
 
 model Course_Pengampu {
@@ -126,13 +132,13 @@ model Application_Course {
 }
 
 model Document {
-  id         Int                  @id @default(autoincrement())
-  title      String               @db.VarChar(255)
-  file_url   String               @db.VarChar(255)
-  sender_id  Int
-  timestamp  DateTime             @default(now()) @db.Timestamp(6)
-  sender     User                 @relation(fields: [sender_id], references: [id])
-  recipients Document_Recipient[]
+  id          Int                  @id @default(autoincrement())
+  title       String               @db.VarChar(255)
+  file_url    String               @db.VarChar(255)
+  sender_id   Int
+  timestamp   DateTime             @default(now()) @db.Timestamp(6)
+  sender      User                 @relation(fields: [sender_id], references: [id])
+  recipients  Document_Recipient[]
 }
 
 model Document_Recipient {
@@ -145,12 +151,12 @@ model Document_Recipient {
 }
 
 model Document_Template {
-  id          String @id @db.VarChar(20)
-  title       String @db.VarChar(255)
-  file_url    String @db.VarChar(255)
-  type        String @db.VarChar(50)
+  id          String  @id @db.VarChar(20)
+  title       String  @db.VarChar(255)
+  file_url    String  @db.VarChar(255)
+  type        String  @db.VarChar(50)
   uploader_id Int?
-  uploader    User?  @relation(fields: [uploader_id], references: [id])
+  uploader    User?   @relation(fields: [uploader_id], references: [id])
 }
 
 model Leave_Application {
@@ -166,45 +172,153 @@ model Leave_Application {
   period            Academic_Period @relation(fields: [period_id], references: [id])
 }
 
-model TA_Application {
-  id                       Int       @id @default(autoincrement())
-  mahasiswa_id             Int
-  mahasiswa                User      @relation(fields: [mahasiswa_id], references: [id])
+model TA_Document_Requirement {
+  id          Int      @id @default(autoincrement())
+  jurusan_id  String   @db.VarChar(10)
+  nama        String   @db.VarChar(255)
+  deskripsi   String?  @db.Text
+  is_active   Boolean  @default(true)
   
-  // Tahap 1: Persyaratan
-  transcript_url           String?   @db.VarChar(255)
-  payment_proof_url        String?   @db.VarChar(255)
-  requirements_status      String    @default("belum_upload")
-  requirements_feedback    String?   @db.Text 
+  jurusan     Jurusan  @relation(fields: [jurusan_id], references: [id])
+  submissions TA_Document_Submission[]
+}
 
-  // Tahap 2: Proposal
-  proposal_title           String?   @db.VarChar(255)
-  proposal_file_url        String?   @db.VarChar(255)
-  proposal_status          String    @default("belum_diajukan")
+model TA_Application {
+  id                    Int      @id @default(autoincrement())
+  mahasiswa_id          Int
+  mahasiswa             User     @relation(fields: [mahasiswa_id], references: [id])
   
-  created_at               DateTime  @default(now())
-  updated_at               DateTime  @updatedAt
+  requirements_status   String   @default("belum_upload")
+  
+  proposal_title        String?  @db.VarChar(255)
+  proposal_file_url     String?  @db.VarChar(255)
+  proposal_status       String   @default("belum_diajukan")
+  approved_by_kaprodi   Boolean  @default(false)
+  approved_by_panitia   Boolean  @default(false)
+
+  exam_date             DateTime? @db.Timestamp()
+  exam_room             String?   @db.VarChar(50)
+  exam_status           String    @default("menunggu_ujian")
+  final_score           Float?    
+  
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+  
+  documents             TA_Document_Submission[]
+  examiners             TA_Examiner[]
+}
+
+model TA_Document_Submission {
+  id                Int                     @id @default(autoincrement())
+  ta_application_id Int
+  requirement_id    Int
+  file_url          String                  @db.VarChar(255)
+  status            String                  @default("pending")
+  feedback          String?                 @db.Text
+  
+  ta_application    TA_Application          @relation(fields: [ta_application_id], references: [id], onDelete: Cascade)
+  requirement       TA_Document_Requirement @relation(fields: [requirement_id], references: [id])
+
+  @@unique([ta_application_id, requirement_id])
 }
 
 model TA_Committee {
-  id          Int      @id @default(autoincrement())
-  jurusan_id  String   @db.VarChar(10)
-  jurusan     Jurusan  @relation(fields: [jurusan_id], references: [id])
-  dosen_id    Int
-  dosen       User     @relation(fields: [dosen_id], references: [id])
+  id         Int     @id @default(autoincrement())
+  jurusan_id String  @db.VarChar(10)
+  jurusan    Jurusan @relation(fields: [jurusan_id], references: [id])
+  dosen_id   Int
+  dosen      User    @relation(fields: [dosen_id], references: [id])
   
-  // Posisi: 'ketua', 'sekretaris', atau 'anggota'
-  position    String   @db.VarChar(20) 
-  
-  // Apakah aktif periode ini?
-  is_active   Boolean  @default(true)
+  position   String  @db.VarChar(20) 
+  is_active  Boolean @default(true)
 
   @@unique([jurusan_id, position])
 }
 
 model TA_Settings {
-  id              Int      @id @default(autoincrement())
-  jurusan_id      String   @unique @db.VarChar(10)
-  jurusan         Jurusan  @relation(fields: [jurusan_id], references: [id])
-  approval_mode   String   @default("kaprodi") // 'kaprodi', 'panitia', 'both'
+  id            Int     @id @default(autoincrement())
+  jurusan_id    String  @unique @db.VarChar(10)
+  jurusan       Jurusan @relation(fields: [jurusan_id], references: [id])
+  approval_mode String  @default("kaprodi")
+}
+
+model TA_Examiner {
+  id                Int            @id @default(autoincrement())
+  ta_application_id Int
+  ta_application    TA_Application @relation(fields: [ta_application_id], references: [id], onDelete: Cascade)
+  dosen_id          Int
+  dosen             User           @relation(fields: [dosen_id], references: [id])
+  
+  peran             String         @default("penguji")
+
+  status_penilaian   String        @default("belum_menilai")
+  catatan_revisi     String?       @db.Text
+  berita_acara_token String?       @unique @db.VarChar(100)
+  waktu_penilaian    DateTime?     @db.Timestamp()
+  
+  grades             TA_Grade[]
+
+  @@unique([ta_application_id, dosen_id])
+}
+
+model TA_Assessment_Component {
+  id          Int       @id @default(autoincrement())
+  jurusan_id  String    @db.VarChar(10)
+  nama        String    @db.VarChar(255)
+  bobot       Float     
+  is_active   Boolean   @default(true)
+  
+  jurusan     Jurusan   @relation(fields: [jurusan_id], references: [id])
+  grades      TA_Grade[]
+}
+
+// 6. Nilai Detail dari masing-masing Dosen Penguji
+model TA_Grade {
+  id            Int                     @id @default(autoincrement())
+  examiner_id   Int
+  component_id  Int
+  score         Float                   
+  
+  examiner      TA_Examiner             @relation(fields: [examiner_id], references: [id], onDelete: Cascade)
+  component     TA_Assessment_Component @relation(fields: [component_id], references: [id])
+
+  @@unique([examiner_id, component_id])
+}
+
+model TA_Supervisor {
+  id                 Int          @id @default(autoincrement())
+  
+  mahasiswa_id       Int          
+  mahasiswa          User         @relation("MahasiswaBimbingan", fields: [mahasiswa_id], references: [id], onDelete: Cascade)
+
+  dosen_id           Int
+  dosen              User         @relation("DosenPembimbing", fields: [dosen_id], references: [id], onDelete: Cascade)
+
+  status_kajur       String       @default("menunggu_persetujuan")
+  
+  is_ready_for_exam  Boolean      @default(false) 
+
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+
+  logbooks           TA_Logbook[]
+
+  @@unique([mahasiswa_id, dosen_id])
+}
+
+model TA_Logbook {
+  id                 Int            @id @default(autoincrement())
+  
+  supervisor_id      Int
+  supervisor         TA_Supervisor  @relation(fields: [supervisor_id], references: [id], onDelete: Cascade)
+
+  tanggal            DateTime       @db.Date
+  topik              String         @db.Text
+  catatan_dosen      String?        @db.Text // Kosong saat mhs baru input, diisi saat dosen review
+  
+  // Hybrid Collaboration Status
+  status             String         @default("menunggu_verifikasi") // 'menunggu_verifikasi', 'terverifikasi'
+
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
 }
