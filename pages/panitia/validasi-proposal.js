@@ -9,7 +9,7 @@ import { FileText, CheckCircle, XCircle, ScrollText } from 'lucide-react';
 
 const getStatusConfig = (p) => {
     if (p.proposal_status === 'disetujui')
-        return { label: 'Disetujui',           bg: '#f0fdf4', color: '#065f46', border: '#bbf7d0' };
+        return { label: 'Disetujui',          bg: '#f0fdf4', color: '#065f46', border: '#bbf7d0' };
     if (p.proposal_status === 'ditolak')
         return { label: 'Ditolak',              bg: '#fef2f2', color: '#991b1b', border: '#fecaca' };
     if (p.approved_by_panitia)
@@ -148,6 +148,7 @@ export default function ValidasiProposalPanitia() {
     const { user, isAuthenticated } = useAppContext();
     const router = useRouter();
     const [proposals, setProposals] = useState([]);
+    const [approvalMode, setApprovalMode] = useState('kaprodi'); // State untuk mode persetujuan
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, selectedProposal: null });
@@ -156,7 +157,15 @@ export default function ValidasiProposalPanitia() {
         setLoading(true);
         try {
             const res = await fetch('/api/ta/approval-proposal');
-            if (res.ok) setProposals(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                if (data.proposals) {
+                    setProposals(data.proposals);
+                    setApprovalMode(data.approval_mode);
+                } else if (Array.isArray(data)) {
+                    setProposals(data); // Fallback
+                }
+            }
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
@@ -164,6 +173,7 @@ export default function ValidasiProposalPanitia() {
     useEffect(() => {
         if (!isAuthenticated) { router.push('/login'); return; }
         fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, router]);
 
     const openModal  = (proposal, type) => setConfirmModal({ isOpen: true, type, selectedProposal: proposal });
@@ -182,19 +192,24 @@ export default function ValidasiProposalPanitia() {
                     feedback: type === 'reject' ? 'Proposal ditolak.' : '',
                 }),
             });
-            if (!res.ok) throw new Error('Gagal memproses');
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Gagal memproses');
+            }
             closeModal();
             fetchData();
         } catch (err) { alert(err.message); }
         finally { setIsSubmitting(false); }
     };
 
-    const needsAction = (p) =>
-        p.proposal_status === 'menunggu_persetujuan' && !p.approved_by_panitia;
+    const needsAction = (p) => p.proposal_status === 'menunggu_persetujuan' && !p.approved_by_panitia;
 
     if (!user || user.selectedRole !== 'panitia') {
         return <Layout><p className="text-sm text-gray-400">Akses Ditolak.</p></Layout>;
     }
+
+    // Penjaga akses UI: Panitia HANYA dilarang memvalidasi jika mode diset mutlak 'kaprodi'
+    const canApprove = approvalMode !== 'kaprodi';
 
     return (
         <Layout>
@@ -203,9 +218,16 @@ export default function ValidasiProposalPanitia() {
                 <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#3b82f6' }}>
                     Manajemen TA
                 </p>
-                <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#0f172a' }}>
+                <h1 className="text-2xl font-extrabold tracking-tight mb-4" style={{ color: '#0f172a' }}>
                     Validasi Proposal TA
                 </h1>
+                
+                {/* Banner Peringatan jika mode tidak mengizinkan Panitia */}
+                {!canApprove && (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm shadow-sm">
+                        <strong>Informasi:</strong> Mode validasi saat ini diatur hanya untuk <strong>Kaprodi</strong>. Anda dapat melihat daftar proposal masuk, namun tidak dapat melakukan validasi.
+                    </div>
+                )}
             </div>
 
             {/* Table card */}
@@ -313,30 +335,34 @@ export default function ValidasiProposalPanitia() {
                                     {/* Aksi */}
                                     <TD center>
                                         {needsAction(p) ? (
-                                            <div className="flex justify-center gap-2">
-                                                <button
-                                                    onClick={() => openModal(p, 'approve')}
-                                                    disabled={isSubmitting}
-                                                    title="Setujui proposal"
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40"
-                                                    style={{ background: '#f0fdf4', color: '#10b981', border: '1px solid #bbf7d0' }}
-                                                    onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.borderColor = '#86efac'; }}
-                                                    onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#bbf7d0'; }}
-                                                >
-                                                    <CheckCircle size={15} />
-                                                </button>
-                                                <button
-                                                    onClick={() => openModal(p, 'reject')}
-                                                    disabled={isSubmitting}
-                                                    title="Tolak proposal"
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40"
-                                                    style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}
-                                                    onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
-                                                    onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}
-                                                >
-                                                    <XCircle size={15} />
-                                                </button>
-                                            </div>
+                                            canApprove ? (
+                                                <div className="flex justify-center gap-2">
+                                                    <button
+                                                        onClick={() => openModal(p, 'approve')}
+                                                        disabled={isSubmitting}
+                                                        title="Setujui proposal"
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40"
+                                                        style={{ background: '#f0fdf4', color: '#10b981', border: '1px solid #bbf7d0' }}
+                                                        onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.borderColor = '#86efac'; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#bbf7d0'; }}
+                                                    >
+                                                        <CheckCircle size={15} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openModal(p, 'reject')}
+                                                        disabled={isSubmitting}
+                                                        title="Tolak proposal"
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40"
+                                                        style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}
+                                                        onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                                                    >
+                                                        <XCircle size={15} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 italic">Validasi oleh Kaprodi</span>
+                                            )
                                         ) : p.approved_by_panitia && p.proposal_status !== 'disetujui' ? (
                                             <span
                                                 className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"

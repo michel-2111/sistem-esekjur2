@@ -31,7 +31,7 @@ const APPROVAL_OPTIONS = [
 function SectionHeader({ icon: Icon, title, color = '#3b82f6' }) {
     return (
         <div className="flex items-center gap-3 mb-6 pb-4" style={{ borderBottom: '1px solid #f1f5f9' }}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: color + '18' }}>
                 <Icon size={17} style={{ color }} />
             </div>
