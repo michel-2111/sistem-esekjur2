@@ -67,7 +67,7 @@ function ExaminerCard({ ex, idx }) {
                 </div>
                 {ex.catatan_revisi ? (
                     <p className="text-sm italic leading-relaxed" style={{ color: '#475569' }}>
-                        "{ex.catatan_revisi}"
+                        &quot;{ex.catatan_revisi}&quot;
                     </p>
                 ) : (
                     <p className="text-xs italic" style={{ color: '#cbd5e1' }}>Tidak ada catatan revisi.</p>

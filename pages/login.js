@@ -491,7 +491,7 @@ export default function LoginPage() {
                         <div className="divider">atau</div>
                         <div className="register-link">
                             Belum punya akun?{' '}
-                            <a href="/register">Daftar sebagai Mahasiswa</a>
+                            <Link href="/register">Daftar sebagai Mahasiswa</Link>
                         </div>
                     </div>
                 </div>

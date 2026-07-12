@@ -34,6 +34,7 @@ export default function BimbinganDosenPage() {
         if (!isAuthenticated) { router.push('/login'); return; }
         if (user?.selectedRole !== 'dosen') { router.push('/dashboard'); return; }
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, user, router]);
 
     const handleVerifyLogbook = async (logbookId) => {

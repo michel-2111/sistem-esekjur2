@@ -518,7 +518,7 @@ export default function ManajemenDokumenPage() {
                             <div className="dok-empty">
                                 <div className="dok-empty-icon"><Send size={18} /></div>
                                 <span style={{ fontWeight: 600 }}>Belum ada dokumen yang dikirim</span>
-                                <span style={{ fontSize: '12px', color: '#CBD5E1' }}>Klik "Kirim Dokumen" untuk memulai</span>
+                                <span style={{ fontSize: '12px', color: '#CBD5E1' }}>Klik &quot;Kirim Dokumen&quot; untuk memulai</span>
                             </div>
                         ) : (
                             <table className="dok-table">

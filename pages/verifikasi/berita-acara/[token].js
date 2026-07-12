@@ -71,7 +71,7 @@ export default function VerifikasiBeritaAcaraPage() {
                                     <div>
                                         <p className="font-bold text-gray-800">{data.mahasiswa.nama}</p>
                                         <p className="text-sm text-gray-600">{data.mahasiswa.identifier} - {data.mahasiswa.prodi.nama}</p>
-                                        <p className="text-sm text-gray-700 italic mt-2 line-clamp-2">"{data.judul_proposal}"</p>
+                                        <p className="text-sm text-gray-700 italic mt-2 line-clamp-2">&quot;{data.judul_proposal}&quot;</p>
                                     </div>
                                 </div>
                             </div>

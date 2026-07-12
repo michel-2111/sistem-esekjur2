@@ -34,6 +34,7 @@ export default function BimbinganMahasiswaPage() {
     useEffect(() => {
         if (!isAuthenticated) { router.push('/login'); return; }
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, router]);
 
     const handleSubmit = async (e) => {
@@ -244,7 +245,7 @@ export default function BimbinganMahasiswaPage() {
                                         <div className="flex items-start justify-between gap-3 mb-4">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 {/* Nomor urut */}
-                                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center">
+                                                <div className="shrink-0 w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center">
                                                     <span className="text-xs font-bold text-blue-600">{index + 1}</span>
                                                 </div>
                                                 <div className="min-w-0">
@@ -264,7 +265,7 @@ export default function BimbinganMahasiswaPage() {
                                             </div>
 
                                             {/* Status + Delete */}
-                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                            <div className="flex items-center gap-2 shrink-0">
                                                 {log.status === 'terverifikasi' ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-green-100 text-green-700">
                                                         <CheckCircle size={11} />
