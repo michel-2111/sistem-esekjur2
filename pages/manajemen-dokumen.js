@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import SendDocumentModal from '../components/sekjur/SendDocumentModal';
 import EditTemplateModal from '../components/sekjur/EditTemplateModal';
+import EditDocumentModal from '../components/sekjur/EditDocumentModal';
 import { useAppContext } from '../context/AppContext';
 import { useRouter } from 'next/router';
-import { FileUp, Edit3, Download, FileText, Send, RefreshCw, AlertCircle, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
+import { FileUp, Edit3, Download, FileText, Send, RefreshCw, AlertCircle, ChevronDown, ChevronUp, FolderOpen, Trash2 } from 'lucide-react';
 
 const style = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
@@ -216,6 +217,11 @@ const style = `
     white-space: nowrap;
   }
 
+  .dok-action-group {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; flex-wrap: wrap;
+  }
+
   .dok-download-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 5px 10px; border-radius: 7px;
@@ -224,9 +230,21 @@ const style = `
     text-decoration: none; transition: all 0.12s;
     font-family: 'Plus Jakarta Sans', sans-serif;
     white-space: nowrap;
+    cursor: pointer;
   }
 
   .dok-download-btn:hover { background: #DBEAFE; border-color: #93C5FD; }
+
+  .dok-edit-doc-btn {
+    background: #FFFBEB; border-color: #FDE68A; color: #B45309;
+  }
+  .dok-edit-doc-btn:hover { background: #FEF3C7; border-color: #F59E0B; }
+
+  .dok-delete-btn {
+    background: #FEF2F2; border-color: #FECACA; color: #DC2626;
+  }
+  .dok-delete-btn:hover { background: #FEE2E2; border-color: #FCA5A5; }
+  .dok-delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .dok-empty {
     padding: 40px 20px; text-align: center;
@@ -301,6 +319,9 @@ export default function ManajemenDokumenPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [templateToEdit, setTemplateToEdit] = useState(null);
+    const [isEditDocModalOpen, setIsEditDocModalOpen] = useState(false);
+    const [documentToEdit, setDocumentToEdit] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
 
     const fetchData = async (silent = false) => {
         if (silent) setIsRefreshing(true);
@@ -346,6 +367,34 @@ export default function ManajemenDokumenPage() {
         formData.append('file', file);
         await fetch('/api/sekjur/dokumen', { method: 'POST', body: formData });
         fetchData(true);
+    };
+
+    const handleUpdateDocument = async (documentId, payload) => {
+        const formData = new FormData();
+        formData.append('action', 'UPDATE_DOCUMENT');
+        formData.append('documentId', documentId);
+        formData.append('title', payload.title);
+        formData.append('recipientIds', JSON.stringify(payload.recipientIds));
+        if (payload.file) formData.append('file', payload.file);
+        await fetch('/api/sekjur/dokumen', { method: 'POST', body: formData });
+        fetchData(true);
+    };
+
+    const handleDeleteDocument = async (documentId) => {
+        if (!confirm('Yakin ingin menghapus dokumen ini? Tindakan ini tidak dapat dibatalkan.')) return;
+        setDeletingId(documentId);
+        try {
+            const res = await fetch(`/api/sekjur/dokumen?id=${documentId}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'Gagal menghapus dokumen.');
+            }
+            fetchData(true);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     if (!user || user.selectedRole !== 'sekjur') {
@@ -524,10 +573,10 @@ export default function ManajemenDokumenPage() {
                             <table className="dok-table">
                                 <thead>
                                     <tr>
-                                        <th style={{ width: '28%' }}>Judul Dokumen</th>
-                                        <th style={{ width: '42%' }}>Penerima</th>
-                                        <th style={{ width: '18%' }}>Tanggal Kirim</th>
-                                        <th style={{ width: '12%', textAlign: 'center' }}>Aksi</th>
+                                        <th style={{ width: '26%' }}>Judul Dokumen</th>
+                                        <th style={{ width: '36%' }}>Penerima</th>
+                                        <th style={{ width: '16%' }}>Tanggal Kirim</th>
+                                        <th style={{ width: '22%', textAlign: 'center' }}>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -557,14 +606,29 @@ export default function ManajemenDokumenPage() {
                                                 </span>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <a
-                                                    href={doc.file_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="dok-download-btn"
-                                                >
-                                                    <Download size={12} /> Unduh
-                                                </a>
+                                                <div className="dok-action-group">
+                                                    <a
+                                                        href={doc.file_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="dok-download-btn"
+                                                    >
+                                                        <Download size={12} /> Unduh
+                                                    </a>
+                                                    <button
+                                                        className="dok-download-btn dok-edit-doc-btn"
+                                                        onClick={() => { setDocumentToEdit(doc); setIsEditDocModalOpen(true); }}
+                                                    >
+                                                        <Edit3 size={12} /> Edit
+                                                    </button>
+                                                    <button
+                                                        className="dok-download-btn dok-delete-btn"
+                                                        disabled={deletingId === doc.id}
+                                                        onClick={() => handleDeleteDocument(doc.id)}
+                                                    >
+                                                        <Trash2 size={12} /> {deletingId === doc.id ? 'Menghapus...' : 'Hapus'}
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -586,6 +650,13 @@ export default function ManajemenDokumenPage() {
                 onClose={() => setIsEditModalOpen(false)}
                 onSave={handleUpdateTemplate}
                 template={templateToEdit}
+            />
+            <EditDocumentModal
+                isOpen={isEditDocModalOpen}
+                onClose={() => setIsEditDocModalOpen(false)}
+                onSave={handleUpdateDocument}
+                document={documentToEdit}
+                recipientList={data.recipients}
             />
         </Layout>
     );
