@@ -34,6 +34,8 @@ const iconMap = {
     '/panitia/pengaturan/komponen-nilai': '⚖️',
     '/panitia/rekap-nilai':             '📊',
     '/panitia/plotting-pembimbing':     '🗺️',
+    '/admin/jurusan':                   '🏛️',
+    '/manajemen-lab':                    '🔬',
     };
 
     const roleLabels = {
@@ -45,6 +47,7 @@ const iconMap = {
     wadir:     'Wadir',
     p4m:       'P4M',
     panitia:   'Panitia TA',
+    admin:     'Administrator',
     };
 
     export default function SideBar( {collapsed, onToggle} ) {
@@ -92,6 +95,7 @@ const iconMap = {
         { label: 'Atur Panitia TA',        path: '/manajemen-ta/atur-panitia' },
         { label: 'Manajemen Dokumen',      path: '/manajemen-dokumen' },
         { label: 'Manajemen Dosen',        path: '/manajemen-dosen' },
+        { label: 'Manajemen Laboratorium', path: '/manajemen-lab' },
         { label: 'Daftar Cuti',            path: '/daftar-cuti' },
         ],
         kaprodi: [
@@ -125,6 +129,10 @@ const iconMap = {
         { label: 'Komponen Nilai',         path: '/panitia/pengaturan/komponen-nilai' },
         { label: 'Rekapitulasi Nilai',     path: '/panitia/rekap-nilai' },
         { label: 'Pembimbing',             path: '/panitia/plotting-pembimbing' },
+        ],
+        admin: [
+        { label: 'Dashboard', path: '/dashboard' },
+        { label: 'Kelola Jurusan', path: '/admin/jurusan' },
         ],
     };
 

@@ -11,6 +11,14 @@ datasource db {
 model Jurusan {
   id                         String                    @id @db.VarChar(10)
   nama                       String                    @db.VarChar(255)
+
+  kajur_id                   Int?                      @unique
+  sekjur_id                  Int?                      @unique
+
+  // Relasi ke Model User
+  kajur                      User?                     @relation("KajurJurusan", fields: [kajur_id], references: [id])
+  sekjur                     User?                     @relation("SekjurJurusan", fields: [sekjur_id], references: [id])
+
   prodi                      Prodi[]
   users                      User[]
   ta_committees              TA_Committee[]
@@ -18,6 +26,7 @@ model Jurusan {
   // Relasi baru: Daftar dokumen wajib per jurusan
   ta_document_requirements   TA_Document_Requirement[]
   ta_assessment_components   TA_Assessment_Component[] 
+  laboratoriums              Laboratorium[]
 }
 
 model Prodi {
@@ -38,21 +47,25 @@ model User {
   nomor_rekening     String?              @db.VarChar(50)
   prodi_id           String?              @db.VarChar(20)
   jurusan_id         String?              @db.VarChar(10)
-  application_courses Application_Course[]
-  course_pengampu    Course_Pengampu[]
-  sent_documents     Document[]
-  received_documents Document_Recipient[]
-  uploaded_templates Document_Template[]
-  leave_applications Leave_Application[]
-  sa_applications    SA_Application[]
-  jurusan            Jurusan?             @relation(fields: [jurusan_id], references: [id])
-  prodi              Prodi?               @relation(fields: [prodi_id], references: [id])
-  roles              User_Roles[]
-  ta_applications    TA_Application[]
-  ta_committees      TA_Committee[]
-  ta_exams           TA_Examiner[]
-  pembimbing_mahasiswa  TA_Supervisor[] @relation("MahasiswaBimbingan")
-  bimbingan_dosen       TA_Supervisor[] @relation("DosenPembimbing")
+
+  lab_dipimpin                Laboratorium? @relation("KepalaLab")
+  jurusan_dipimpin            Jurusan?             @relation("KajurJurusan")
+  jurusan_disekretarisi       Jurusan?             @relation("SekjurJurusan")
+  application_courses         Application_Course[]
+  course_pengampu             Course_Pengampu[]
+  sent_documents              Document[]
+  received_documents          Document_Recipient[]
+  uploaded_templates          Document_Template[]
+  leave_applications          Leave_Application[]
+  sa_applications             SA_Application[]
+  jurusan                     Jurusan?             @relation(fields: [jurusan_id], references: [id])
+  prodi                       Prodi?               @relation(fields: [prodi_id], references: [id])
+  roles                       User_Roles[]
+  ta_applications             TA_Application[]
+  ta_committees               TA_Committee[]
+  ta_exams                    TA_Examiner[]
+  pembimbing_mahasiswa        TA_Supervisor[] @relation("MahasiswaBimbingan")
+  bimbingan_dosen             TA_Supervisor[] @relation("DosenPembimbing")
 }
 
 model Role {
@@ -321,4 +334,14 @@ model TA_Logbook {
 
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
+}
+
+model Laboratorium {
+  id             Int      @id @default(autoincrement())
+  nama_lab       String   @db.VarChar(255)
+  jurusan_id     String   @db.VarChar(10)
+  kepala_lab_id  Int?     @unique
+
+  jurusan        Jurusan  @relation(fields: [jurusan_id], references: [id])
+  kepala_lab     User?    @relation("KepalaLab", fields: [kepala_lab_id], references: [id])
 }
