@@ -36,6 +36,7 @@ const iconMap = {
     '/panitia/plotting-pembimbing':     '🗺️',
     '/admin/jurusan':                   '🏛️',
     '/manajemen-lab':                    '🔬',
+    '/admin/users':                     '👤',
     };
 
     const roleLabels = {
@@ -133,6 +134,7 @@ const iconMap = {
         admin: [
         { label: 'Dashboard', path: '/dashboard' },
         { label: 'Kelola Jurusan', path: '/admin/jurusan' },
+        { label: 'Manajemen User', path: '/admin/users' },
         ],
     };
 
